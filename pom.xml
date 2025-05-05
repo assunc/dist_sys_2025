@@ -60,7 +60,7 @@
                 </executions>
                 <configuration>
                     <sources>
-                        <source>${project.basedir}/src/main/resources/meals.xsd</source>
+                        <source>${project.basedir}/src/main/resources/rooms.xsd</source>
                     </sources>
                 </configuration>
             </plugin>

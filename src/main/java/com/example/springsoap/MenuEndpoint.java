@@ -14,45 +14,37 @@ import org.springframework.ws.server.endpoint.annotation.ResponsePayload;
 public class MenuEndpoint {
     private static final String NAMESPACE_URI = "http://foodmenu.io/gt/webservice";
 
-    private MealRepository mealrepo;
+    private RoomRepository roomrepo;
 
     @Autowired
-    public MenuEndpoint(MealRepository mealrepo) {
-        this.mealrepo = mealrepo;
+    public MenuEndpoint(RoomRepository roomrepo) {
+        this.roomrepo = roomrepo;
     }
 
-    @PayloadRoot(namespace = NAMESPACE_URI, localPart = "getMealRequest")
+    @PayloadRoot(namespace = NAMESPACE_URI, localPart = "getRoomRequest")
     @ResponsePayload
-    public GetMealResponse getMeal(@RequestPayload GetMealRequest request) {
-        GetMealResponse response = new GetMealResponse();
-        response.setMeal(mealrepo.findMeal(request.getName()));
+    public GetRoomResponse getRoom(@RequestPayload GetRoomRequest request) {
+        GetRoomResponse response = new GetRoomResponse();
+        response.setRoom(roomrepo.findRoom(request.getNumber()));
 
         return response;
     }
 
-    @PayloadRoot(namespace = NAMESPACE_URI, localPart = "getLargestMealRequest")
+//    @PayloadRoot(namespace = NAMESPACE_URI, localPart = "getLargestMealRequest")
+//    @ResponsePayload
+//    public GetLargestMealResponse getLargestMeal(@RequestPayload GetLargestMealRequest request) {
+//        GetLargestMealResponse response = new GetLargestMealResponse();
+//        response.setMeal(mealrepo.findBiggestMeal());
+//
+//        return response;
+//    }
+
+
+    @PayloadRoot(namespace = NAMESPACE_URI, localPart = "addBookingRequest")
     @ResponsePayload
-    public GetLargestMealResponse getLargestMeal(@RequestPayload GetLargestMealRequest request) {
-        GetLargestMealResponse response = new GetLargestMealResponse();
-        response.setMeal(mealrepo.findBiggestMeal());
-
-        return response;
-    }
-
-    @PayloadRoot(namespace = NAMESPACE_URI, localPart = "getCheapestMealRequest")
-    @ResponsePayload
-    public GetCheapestMealResponse getLargestMeal(@RequestPayload GetCheapestMealRequest request) {
-        GetCheapestMealResponse response = new GetCheapestMealResponse();
-        response.setMeal(mealrepo.findCheapestMeal());
-
-        return response;
-    }
-
-    @PayloadRoot(namespace = NAMESPACE_URI, localPart = "addOrderRequest")
-    @ResponsePayload
-    public AddOrderResponse addOrder(@RequestPayload AddOrderRequest request) {
-        AddOrderResponse response = new AddOrderResponse();
-        response.setOrder(mealrepo.addOrder(request.getMealName(), request.getAddress()));
+    public AddBookingResponse addOrder(@RequestPayload AddBookingRequest request) {
+        AddBookingResponse response = new AddBookingResponse();
+        response.setBooking(roomrepo.addBooking(request.getRoomNumber(), request.getStartDate(), request.getEndDate()));
 
         return response;
     }

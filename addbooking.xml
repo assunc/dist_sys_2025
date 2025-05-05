@@ -2,9 +2,10 @@
                   xmlns:gs="http://foodmenu.io/gt/webservice">
     <soapenv:Header/>
     <soapenv:Body>
-        <gs:addOrderRequest>
-            <gs:mealName>Portobello</gs:mealName>
-            <gs:address>Lindenstraat 7</gs:address>
-        </gs:addOrderRequest>
+        <gs:addBookingRequest>
+            <gs:roomNumber>102</gs:roomNumber>
+            <gs:startDate>2025-05-06</gs:startDate>
+            <gs:endDate>2025-05-10</gs:endDate>
+        </gs:addBookingRequest>
     </soapenv:Body>
 </soapenv:Envelope>

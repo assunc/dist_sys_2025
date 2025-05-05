@@ -1,0 +1,77 @@
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:tns="http://foodmenu.io/gt/webservice"
+           targetNamespace="http://foodmenu.io/gt/webservice" elementFormDefault="qualified">
+
+    <xs:element name="getRoomRequest">
+        <xs:complexType>
+            <xs:sequence>
+                <xs:element name="number" type="xs:int"/>
+            </xs:sequence>
+        </xs:complexType>
+    </xs:element>
+
+    <xs:element name="getRoomResponse">
+        <xs:complexType>
+            <xs:sequence>
+                <xs:element name="room" type="tns:room"/>
+            </xs:sequence>
+        </xs:complexType>
+    </xs:element>
+
+<!--    <xs:element name="getLargestMealRequest">-->
+<!--        <xs:complexType>-->
+<!--            <xs:sequence></xs:sequence>-->
+<!--        </xs:complexType>-->
+<!--    </xs:element>-->
+
+<!--    <xs:element name="getLargestMealResponse">-->
+<!--        <xs:complexType>-->
+<!--            <xs:sequence>-->
+<!--                <xs:element name="meal" type="tns:meal"/>-->
+<!--            </xs:sequence>-->
+<!--        </xs:complexType>-->
+<!--    </xs:element>-->
+
+    <xs:element name="addBookingRequest">
+        <xs:complexType>
+            <xs:sequence>
+                <xs:element name="roomNumber" type="xs:int"/>
+                <xs:element name="startDate" type="xs:date"/>
+                <xs:element name="endDate" type="xs:date"/>
+            </xs:sequence>
+        </xs:complexType>
+    </xs:element>
+
+    <xs:element name="addBookingResponse">
+        <xs:complexType>
+            <xs:sequence>
+                <xs:element name="booking" type="tns:booking"/>
+            </xs:sequence>
+        </xs:complexType>
+    </xs:element>
+
+    <xs:complexType name="room">
+        <xs:sequence>
+            <xs:element name="number" type="xs:int"/>
+            <xs:element name="nOfPeople" type="xs:int"/>
+            <xs:element name="price" type="xs:int"/>
+        </xs:sequence>
+    </xs:complexType>
+
+    <xs:complexType name="booking">
+        <xs:sequence>
+            <xs:element name="room" type="tns:room"/>
+            <xs:element name="startDate" type="xs:date"/>
+            <xs:element name="endDate" type="xs:date"/>
+            <xs:element name="status" type="tns:bookingStatus"/>
+        </xs:sequence>
+    </xs:complexType>
+
+    <xs:simpleType name="bookingStatus">
+        <xs:restriction base="xs:string">
+            <xs:enumeration value="Pending"/>
+            <xs:enumeration value="Canceled"/>
+            <xs:enumeration value="Reserved"/>
+        </xs:restriction>
+    </xs:simpleType>
+
+</xs:schema>
