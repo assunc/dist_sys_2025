@@ -17,19 +17,22 @@
         </xs:complexType>
     </xs:element>
 
-<!--    <xs:element name="getLargestMealRequest">-->
-<!--        <xs:complexType>-->
-<!--            <xs:sequence></xs:sequence>-->
-<!--        </xs:complexType>-->
-<!--    </xs:element>-->
+    <xs:element name="getFreeRoomsRequest">
+        <xs:complexType>
+            <xs:sequence>
+                <xs:element name="startDate" type="xs:date"/>
+                <xs:element name="endDate" type="xs:date"/>
+            </xs:sequence>
+        </xs:complexType>
+    </xs:element>
 
-<!--    <xs:element name="getLargestMealResponse">-->
-<!--        <xs:complexType>-->
-<!--            <xs:sequence>-->
-<!--                <xs:element name="meal" type="tns:meal"/>-->
-<!--            </xs:sequence>-->
-<!--        </xs:complexType>-->
-<!--    </xs:element>-->
+    <xs:element name="getFreeRoomsResponse">
+        <xs:complexType>
+            <xs:sequence>
+                <xs:element name="rooms" type="tns:room" minOccurs="0" maxOccurs="unbounded"/>
+            </xs:sequence>
+        </xs:complexType>
+    </xs:element>
 
     <xs:element name="addBookingRequest">
         <xs:complexType>

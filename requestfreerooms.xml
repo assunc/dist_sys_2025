@@ -2,6 +2,9 @@
                   xmlns:gs="http://foodmenu.io/gt/webservice">
     <soapenv:Header/>
     <soapenv:Body>
-        <gs:getLargestMealRequest/>
+        <gs:getFreeRoomsRequest>
+            <gs:startDate>2025-05-08</gs:startDate>
+            <gs:endDate>2025-05-13</gs:endDate>
+        </gs:getFreeRoomsRequest>
     </soapenv:Body>
 </soapenv:Envelope>

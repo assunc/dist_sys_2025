@@ -1,5 +1,7 @@
 package com.example.springsoap;
 
+import java.util.List;
+import java.util.ArrayList;
 
 import io.foodmenu.gt.webservice.*;
 
@@ -30,14 +32,22 @@ public class MenuEndpoint {
         return response;
     }
 
-//    @PayloadRoot(namespace = NAMESPACE_URI, localPart = "getLargestMealRequest")
-//    @ResponsePayload
-//    public GetLargestMealResponse getLargestMeal(@RequestPayload GetLargestMealRequest request) {
-//        GetLargestMealResponse response = new GetLargestMealResponse();
-//        response.setMeal(mealrepo.findBiggestMeal());
-//
-//        return response;
-//    }
+    @PayloadRoot(namespace = NAMESPACE_URI, localPart = "getFreeRoomsRequest")
+    @ResponsePayload
+    public GetFreeRoomsResponse getFreeRooms(@RequestPayload GetFreeRoomsRequest request) {
+        List<Room> freeRooms = new ArrayList<>();
+
+        for (Room room : roomrepo.findAllRooms()) {
+            if (!roomrepo.isRoomBooked(room, request.getStartDate(), request.getEndDate())) {
+                freeRooms.add(room);
+            }
+        }
+
+        GetFreeRoomsResponse response = new GetFreeRoomsResponse();
+        response.getRooms().addAll(freeRooms);
+
+        return response;
+    }
 
 
     @PayloadRoot(namespace = NAMESPACE_URI, localPart = "addBookingRequest")

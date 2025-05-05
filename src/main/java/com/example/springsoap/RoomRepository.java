@@ -1,8 +1,12 @@
 package com.example.springsoap;
 
 import javax.annotation.PostConstruct;
+import javax.xml.datatype.DatatypeFactory;
 import javax.xml.datatype.XMLGregorianCalendar;
+import java.time.LocalDate;
 import java.util.HashMap;
+import java.util.List;
+import java.util.ArrayList;
 import java.util.Map;
 
 
@@ -16,9 +20,12 @@ import org.springframework.util.Assert;
 @Component
 public class RoomRepository {
     private static final Map<Integer, Room> rooms = new HashMap<Integer, Room>();
+    private static final List<Booking> bookings = new ArrayList<>();
 
     @PostConstruct
     public void initData() {
+
+        DatatypeFactory dataFactory = DatatypeFactory.newDefaultInstance();
 
         Room a = new Room();
         a.setNumber(101);
@@ -40,33 +47,46 @@ public class RoomRepository {
         c.setNOfPeople(1);
         c.setPrice(50);
 
-
         rooms.put(c.getNumber(), c);
+
+        Booking d = new Booking();
+        d.setRoom(a);
+        d.setStartDate(dataFactory.newXMLGregorianCalendarDate(2025, 5, 6, 0));
+        d.setEndDate(dataFactory.newXMLGregorianCalendarDate(2025, 5, 10, 0));
+
+        bookings.add(d);
     }
 
     public Room findRoom(int number) {
-        Assert.notNull(number, "The room's number must not be null");
         return rooms.get(number);
     }
 
-    /*
-    public Room findBiggestMeal() {
-
-        if (rooms == null) return null;
-        if (rooms.size() == 0) return null;
-
-        var values = rooms.values();
-        return values.stream().max(Comparator.comparing(Room::getKcal)).orElseThrow(NoSuchElementException::new);
-
-    }*/
-
-    public Booking addBooking(int roomNumber, XMLGregorianCalendar startDate, XMLGregorianCalendar endDate) {
-        Booking order = new Booking();
-        order.setRoom(findRoom(roomNumber));
-        order.setStartDate(startDate);
-        order.setEndDate(endDate);
-
-        return order;
+    public List<Room> findAllRooms() {
+        return new ArrayList<>(rooms.values());
     }
 
+    public List<Booking> findAllBookings() {
+        return bookings;
+    }
+
+    public Booking addBooking(int roomNumber, XMLGregorianCalendar startDate, XMLGregorianCalendar endDate) {
+        Booking booking = new Booking();
+        booking.setRoom(findRoom(roomNumber));
+        booking.setStartDate(startDate);
+        booking.setEndDate(endDate);
+
+        bookings.add(booking);
+        return booking;
+    }
+
+    public boolean isRoomBooked(Room room, XMLGregorianCalendar start, XMLGregorianCalendar end) {
+        for (Booking booking : bookings) {
+            if (booking.getRoom().getNumber() == room.getNumber() &&
+                    booking.getStartDate().toGregorianCalendar().compareTo(end.toGregorianCalendar()) < 0 &&
+                    booking.getEndDate().toGregorianCalendar().compareTo(start.toGregorianCalendar()) > 0) {
+                return true;
+            }
+        }
+        return false;
+    }
 }
