@@ -3,7 +3,6 @@ package com.example.springsoap;
 import javax.annotation.PostConstruct;
 import javax.xml.datatype.DatatypeFactory;
 import javax.xml.datatype.XMLGregorianCalendar;
-import java.time.LocalDate;
 import java.util.HashMap;
 import java.util.List;
 import java.util.ArrayList;
@@ -13,12 +12,10 @@ import java.util.Map;
 import io.foodmenu.gt.webservice.*;
 
 
-import org.springframework.cglib.core.Local;
 import org.springframework.stereotype.Component;
-import org.springframework.util.Assert;
 
 @Component
-public class RoomRepository {
+public class RoomRepositoryE {
     private static final Map<Integer, Room> rooms = new HashMap<Integer, Room>();
     private static final List<Booking> bookings = new ArrayList<>();
 
