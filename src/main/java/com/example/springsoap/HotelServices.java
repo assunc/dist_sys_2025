@@ -8,16 +8,13 @@ import com.example.springsoap.Repositories.RoomRepository;
 
 import javax.xml.datatype.XMLGregorianCalendar;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.cglib.core.Local;
 import org.springframework.stereotype.Service;
 
-import java.time.ZonedDateTime;
 import java.util.Optional;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.GregorianCalendar;
 import javax.xml.datatype.DatatypeFactory;
-import javax.xml.datatype.XMLGregorianCalendar;
 
 @Service
 public class HotelServices {
@@ -40,16 +37,16 @@ public class HotelServices {
     }
 
     public Booking addBooking(int roomNumber, XMLGregorianCalendar startDate, XMLGregorianCalendar endDate) {
-        Optional<Room> room = roomRepository.findById(roomNumber);
-        if (room.isPresent()) {
-            Booking booking = new Booking();
-            booking.setRoom(room.get());
-            booking.setStartDate(XMLGCtoLocalDate(startDate));
-            booking.setEndDate(XMLGCtoLocalDate(endDate));
-            bookingRepository.save(booking);
-            return booking;
-        }
-        return null;
+        Room room = roomRepository.findByNumber(roomNumber)
+                .orElseThrow(() -> new IllegalArgumentException("Room number not found: " + roomNumber));
+
+        Booking booking = new Booking();
+        booking.setRoom(room);
+        booking.setStartDate(XMLGCtoLocalDate(startDate));
+        booking.setEndDate(XMLGCtoLocalDate(endDate));
+        booking.setStatus("Pending");
+        bookingRepository.save(booking);
+        return booking;
     }
 
     public XMLGregorianCalendar localDateToXMLGC(LocalDate localDate) {
