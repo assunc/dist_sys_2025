@@ -16,10 +16,10 @@ import org.springframework.ws.server.endpoint.annotation.ResponsePayload;
 public class MenuEndpoint {
     private static final String NAMESPACE_URI = "http://foodmenu.io/gt/webservice";
 
-    private RoomRepository roomrepo;
+    private RoomRepositoryE roomrepo;
 
     @Autowired
-    public MenuEndpoint(RoomRepository roomrepo) {
+    public MenuEndpoint(RoomRepositoryE roomrepo) {
         this.roomrepo = roomrepo;
     }
 
