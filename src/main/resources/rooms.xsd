@@ -12,7 +12,7 @@
     <xs:element name="getRoomResponse">
         <xs:complexType>
             <xs:sequence>
-                <xs:element name="room" type="tns:room"/>
+                <xs:element name="room" type="tns:roomXml"/>
             </xs:sequence>
         </xs:complexType>
     </xs:element>
@@ -29,7 +29,7 @@
     <xs:element name="getFreeRoomsResponse">
         <xs:complexType>
             <xs:sequence>
-                <xs:element name="rooms" type="tns:room" minOccurs="0" maxOccurs="unbounded"/>
+                <xs:element name="rooms" type="tns:roomXml" minOccurs="0" maxOccurs="unbounded"/>
             </xs:sequence>
         </xs:complexType>
     </xs:element>
@@ -37,7 +37,7 @@
     <xs:element name="addBookingRequest">
         <xs:complexType>
             <xs:sequence>
-                <xs:element name="roomNumber" type="xs:int"/>
+                <xs:element name="roomNumber" type="xs:int" maxOccurs="unbounded"/>
                 <xs:element name="startDate" type="xs:date"/>
                 <xs:element name="endDate" type="xs:date"/>
             </xs:sequence>
@@ -47,12 +47,44 @@
     <xs:element name="addBookingResponse">
         <xs:complexType>
             <xs:sequence>
-                <xs:element name="booking" type="tns:booking"/>
+                <xs:element name="booking" type="tns:bookingXml" maxOccurs="unbounded"/>
             </xs:sequence>
         </xs:complexType>
     </xs:element>
 
-    <xs:complexType name="room">
+    <xs:element name="confirmBookingRequest">
+        <xs:complexType>
+            <xs:sequence>
+                <xs:element name="bookingId" type="xs:int" maxOccurs="unbounded"/>
+            </xs:sequence>
+        </xs:complexType>
+    </xs:element>
+
+    <xs:element name="confirmBookingResponse">
+        <xs:complexType>
+            <xs:sequence>
+                <xs:element name="status" type="tns:bookingStatus"/>
+            </xs:sequence>
+        </xs:complexType>
+    </xs:element>
+
+    <xs:element name="cancelBookingRequest">
+        <xs:complexType>
+            <xs:sequence>
+                <xs:element name="bookingId" type="xs:int" maxOccurs="unbounded"/>
+            </xs:sequence>
+        </xs:complexType>
+    </xs:element>
+
+    <xs:element name="cancelBookingResponse">
+        <xs:complexType>
+            <xs:sequence>
+                <xs:element name="status" type="tns:bookingStatus"/>
+            </xs:sequence>
+        </xs:complexType>
+    </xs:element>
+
+    <xs:complexType name="roomXml">
         <xs:sequence>
             <xs:element name="number" type="xs:int"/>
             <xs:element name="nOfPeople" type="xs:int"/>
@@ -60,9 +92,10 @@
         </xs:sequence>
     </xs:complexType>
 
-    <xs:complexType name="booking">
+    <xs:complexType name="bookingXml">
         <xs:sequence>
-            <xs:element name="room" type="tns:room"/>
+            <xs:element name="id" type="xs:int"/>
+            <xs:element name="roomNumber" type="xs:int"/>
             <xs:element name="startDate" type="xs:date"/>
             <xs:element name="endDate" type="xs:date"/>
             <xs:element name="status" type="tns:bookingStatus"/>
