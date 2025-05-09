@@ -2,6 +2,7 @@ package com.example.springsoap;
 
 import java.util.List;
 import java.util.ArrayList;
+import java.util.Objects;
 import java.util.Optional;
 
 import com.example.springsoap.Entities.Room;
@@ -80,13 +81,13 @@ public class MenuEndpoint {
         AddBookingResponse response = new AddBookingResponse();
         for (int roomNumber : request.getRoomNumber()) {
             Booking booking = hotelServices.addBooking(roomNumber, request.getStartDate(), request.getEndDate());
-            BookingXml bookingXml = new BookingXml();
-            bookingXml.setId(booking.getId());
-            bookingXml.setRoomNumber(booking.getRoom().getNumber());
-            bookingXml.setStartDate(hotelServices.localDateToXMLGC(booking.getStartDate()));
-            bookingXml.setEndDate(hotelServices.localDateToXMLGC(booking.getEndDate()));
-            bookingXml.setStatus(BookingStatus.fromValue(booking.getStatus()));
-            response.getBooking().add(bookingXml);
+            if (booking != null) {
+                response.getBookingId().add(booking.getId());
+                response.getStatus().add(BookingStatus.fromValue(booking.getStatus()));
+            } else {
+                response.getBookingId().add(-1);
+                response.getStatus().add(BookingStatus.NOT_AVAILABLE);
+            }
         }
         return response;
     }
@@ -95,11 +96,15 @@ public class MenuEndpoint {
     @ResponsePayload
     public ConfirmBookingResponse confirmBooking(@RequestPayload ConfirmBookingRequest request) {
         ConfirmBookingResponse response = new ConfirmBookingResponse();
-        request.getBookingId().forEach(
-                bookingId -> bookingRepository.findById(bookingId).ifPresent(
-                        booking -> booking.setStatus(String.valueOf(BookingStatus.RESERVED))));
+        for (int bookingId : request.getBookingId()) {
+            Booking booking = bookingRepository.findById(bookingId).orElseThrow(
+                    () -> new IllegalArgumentException("Booking Id not found: " + bookingId));
+            if (booking.getStatus().equals(BookingStatus.PENDING.toString())) {
+                booking.setStatus(String.valueOf(BookingStatus.RESERVED));
+                bookingRepository.save(booking);
+            }
+        }
         response.setStatus(BookingStatus.RESERVED);
-
         return response;
     }
 
@@ -107,11 +112,13 @@ public class MenuEndpoint {
     @ResponsePayload
     public CancelBookingResponse cancelBooking(@RequestPayload CancelBookingRequest request) {
         CancelBookingResponse response = new CancelBookingResponse();
-        request.getBookingId().forEach(
-                bookingId -> bookingRepository.findById(bookingId).ifPresent(
-                        booking -> booking.setStatus(String.valueOf(BookingStatus.CANCELED))));
+        for (int bookingId : request.getBookingId()) {
+            Booking booking = bookingRepository.findById(bookingId).orElseThrow(
+                    () -> new IllegalArgumentException("Booking Id not found: " + bookingId));
+            booking.setStatus(String.valueOf(BookingStatus.CANCELED));
+            bookingRepository.save(booking);
+        }
         response.setStatus(BookingStatus.CANCELED);
-
         return response;
     }
 }

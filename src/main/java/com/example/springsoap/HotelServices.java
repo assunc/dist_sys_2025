@@ -7,6 +7,8 @@ import com.example.springsoap.Repositories.BookingRepository;
 import com.example.springsoap.Repositories.RoomRepository;
 
 import javax.xml.datatype.XMLGregorianCalendar;
+
+import io.foodmenu.gt.webservice.BookingStatus;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -27,7 +29,8 @@ public class HotelServices {
 
     public boolean isRoomBooked(Room room, XMLGregorianCalendar start, XMLGregorianCalendar end) {
         for (Booking booking : bookingRepository.findAll()) {
-            if (booking.getRoom().getNumber().compareTo(room.getNumber()) == 0 &&
+            if ((booking.getStatus().equals(BookingStatus.RESERVED.toString()) || booking.getStatus().equals(BookingStatus.PENDING.toString())) &&
+                    booking.getRoom().getNumber().compareTo(room.getNumber()) == 0 &&
                     localDateToXMLGC(booking.getStartDate()).toGregorianCalendar().compareTo(end.toGregorianCalendar()) < 0 &&
                     localDateToXMLGC(booking.getEndDate()).toGregorianCalendar().compareTo(start.toGregorianCalendar()) > 0) {
                 return true;
@@ -39,14 +42,16 @@ public class HotelServices {
     public Booking addBooking(int roomNumber, XMLGregorianCalendar startDate, XMLGregorianCalendar endDate) {
         Room room = roomRepository.findByNumber(roomNumber)
                 .orElseThrow(() -> new IllegalArgumentException("Room number not found: " + roomNumber));
-
-        Booking booking = new Booking();
-        booking.setRoom(room);
-        booking.setStartDate(XMLGCtoLocalDate(startDate));
-        booking.setEndDate(XMLGCtoLocalDate(endDate));
-        booking.setStatus("Pending");
-        bookingRepository.save(booking);
-        return booking;
+        if (!isRoomBooked(room, startDate, endDate)) {
+            Booking booking = new Booking();
+            booking.setRoom(room);
+            booking.setStartDate(XMLGCtoLocalDate(startDate));
+            booking.setEndDate(XMLGCtoLocalDate(endDate));
+            booking.setStatus("Pending");
+            bookingRepository.save(booking);
+            return booking;
+        }
+        return null;
     }
 
     public XMLGregorianCalendar localDateToXMLGC(LocalDate localDate) {
