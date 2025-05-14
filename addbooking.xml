@@ -4,8 +4,8 @@
     <soapenv:Body>
         <gs:addBookingRequest>
             <gs:roomNumber>102</gs:roomNumber>
-            <gs:startDate>2025-05-06</gs:startDate>
-            <gs:endDate>2025-05-10</gs:endDate>
+            <gs:startDate>2025-05-11</gs:startDate>
+            <gs:endDate>2025-05-12</gs:endDate>
         </gs:addBookingRequest>
     </soapenv:Body>
 </soapenv:Envelope>
