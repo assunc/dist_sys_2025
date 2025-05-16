@@ -30,11 +30,7 @@ public class ValidationCallbackHandler implements CallbackHandler {
         for (Callback callback : callbacks) {
             if (callback instanceof WSPasswordCallback pc) {
                 Broker user = brokerRepository.findByUsername(pc.getIdentifier());
-                // Basic static user check
-                if (user != null && passwordEncoder.matches(pc.getPassword(), user.getHashedPassword())) {
-                    return;
-                }
-                throw new SecurityException("Invalid username or password");
+                pc.setPassword(user.getHashedPassword());
             } else {
                 throw new UnsupportedCallbackException(callback, "Unrecognized Callback");
             }
