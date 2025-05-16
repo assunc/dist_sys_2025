@@ -49,12 +49,6 @@ public class WebServiceConfig extends WsConfigurerAdapter {
         interceptors.add(securityInterceptor()); // Add WS-Security interceptor
     }
 
-//    @Bean
-//    public PasswordEncoder passwordEncoder() {
-//        return new BCryptPasswordEncoder();
-//    }
-
-
     @Bean
     public ServletRegistrationBean<MessageDispatcherServlet> messageDispatcherServlet(ApplicationContext applicationContext) {
         MessageDispatcherServlet servlet = new MessageDispatcherServlet();

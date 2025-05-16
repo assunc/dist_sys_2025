@@ -17,12 +17,10 @@ import java.io.IOException;
 public class ValidationCallbackHandler implements CallbackHandler {
 
     private final BrokerRepository brokerRepository;
-    private final PasswordEncoder passwordEncoder;
 
     @Autowired
     public ValidationCallbackHandler(BrokerRepository brokerRepository) {
         this.brokerRepository = brokerRepository;
-        this.passwordEncoder = new BCryptPasswordEncoder();
     }
 
     @Override
