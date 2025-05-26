@@ -1,9 +1,0 @@
-<soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/"
-                  xmlns:gs="http://foodmenu.io/gt/webservice">
-    <soapenv:Header/>
-    <soapenv:Body>
-        <gs:cancelBookingRequest>
-            <gs:bookingId>26</gs:bookingId>
-        </gs:cancelBookingRequest>
-    </soapenv:Body>
-</soapenv:Envelope>

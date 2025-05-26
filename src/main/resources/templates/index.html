@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Auth0 Spring Boot Demo</title>
+</head>
+<body>
+<div th:if="${profile != null}">
+    <h2>Welcome, <span th:text="${profile['name']}"></span>!</h2>
+    <img th:src="${profile['picture']}" alt="User Picture" width="100"/>
+    <p>Email: <span th:text="${profile['email']}"></span></p>
+    <a href="/logout">Logout</a>
+</div>
+<div th:unless="${profile != null}">
+    <h2>You are not logged in</h2>
+    <a href="/oauth2/authorization/auth0">Login with Auth0</a>
+</div>
+</body>
+</html>

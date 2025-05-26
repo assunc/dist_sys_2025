@@ -2,43 +2,53 @@ package com.example.springsoap;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
-import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
+import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.web.SecurityFilterChain;
-
+import org.springframework.security.web.authentication.logout.LogoutSuccessHandler;
+import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository;
+import org.springframework.security.oauth2.core.oidc.user.OidcUser;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.web.util.UriComponentsBuilder;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 @Configuration
-@EnableMethodSecurity
+@EnableWebSecurity
 public class SecurityConfig {
 
     @Bean
-    public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+    public SecurityFilterChain securityFilterChain(HttpSecurity http,
+                                                   ClientRegistrationRepository clientRegistrationRepository) throws Exception {
         http
                 .authorizeHttpRequests(auth -> auth
-                        .antMatchers("/", "/public/**").permitAll()
-                        .antMatchers("/user/**").hasAnyAuthority(
-                                "ROLE_READ_ORDERS", "ROLE_CANCEL_ORDERS")
-                        .antMatchers("/manager/**").hasAnyAuthority(
-                                "ROLE_MANAGE_ORDERS", "ROLE_READ_ORDERS", "ROLE_CANCEL_ORDERS")
+                        .requestMatchers("/", "/index", "/error").permitAll()
                         .anyRequest().authenticated()
                 )
-                .exceptionHandling(e -> e
-                        .authenticationEntryPoint((request, response, authException) ->
-                                response.sendRedirect("/home"))
+                .oauth2Login(oauth2 -> oauth2
+                        .defaultSuccessUrl("/", true)
                 )
-
-                .oauth2Login()
-                .and()
-                .oauth2ResourceServer(oauth2 -> oauth2
-                        .jwt(jwt -> jwt.jwtAuthenticationConverter(jwtConverter()))
+                .logout(logout -> logout
+                        .logoutSuccessHandler(oidcLogoutSuccessHandler(clientRegistrationRepository))
                 );
 
         return http.build();
     }
 
-    private JwtAuthenticationConverter jwtConverter() {
-        JwtAuthenticationConverter converter = new JwtAuthenticationConverter();
-        converter.setJwtGrantedAuthoritiesConverter(new JwtRoleConverter());
-        return converter;
+    private LogoutSuccessHandler oidcLogoutSuccessHandler(ClientRegistrationRepository clientRegistrationRepository) {
+        return (HttpServletRequest request, HttpServletResponse response,
+                org.springframework.security.core.Authentication authentication) -> {
+
+            String issuerUri = "https://dev-distributed.eu.auth0.com/v2/logout";
+            String clientId = "qNdLFytoI8f16Xe8JtFKhRohbhrqWlFn";
+
+            String logoutUrl = UriComponentsBuilder
+                    .fromHttpUrl(issuerUri)
+                    .queryParam("client_id", clientId)
+                    .queryParam("returnTo", "http://localhost:8080/")
+                    .encode()
+                    .toUriString();
+
+            response.sendRedirect(logoutUrl);
+        };
     }
 }
