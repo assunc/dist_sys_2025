@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout">
+<head>
+    <meta charset="UTF-8" />
+    <title>Travel Broker</title>
+    <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            font-family: sans-serif;
+        }
+        header, nav, footer {
+            background: #222;
+            color: white;
+            text-align: center;
+            padding: 1rem;
+            position: fixed;
+            width: 100%;
+            z-index: 1000;
+        }
+        header { top: 0;
+        }
+        nav { top: 75px; height: 30px;
+}
+        footer { bottom: 0; }
+        nav ul {
+            list-style: none;
+            display: flex;
+            justify-content: center;
+            gap: 2rem;
+            margin: 10;
+            padding: 0;
+        }
+        nav a {
+            color: white;
+            text-decoration: none;
+        }
+        nav a:hover {
+            text-decoration: underline;
+        }
+        main {
+             margin-top: 160px; /* Push content below header + nav */
+             margin-bottom: 40px; /* Push above footer */
+             padding: 0 20px;
+             min-height: calc(100vh - 200px);
+        }
+        #login-button ,#logout-button{
+                position: absolute;
+                top: 20px;
+                right: 20px;
+                background-color: #4CAF50;
+                color: white;
+                padding: 8px 16px;
+                border: none;
+                text-decoration: none;
+                font-size: 14px;
+                border-radius: 4px;
+                cursor: pointer;
+                }
+
+        #login-button:hover {
+            background-color: #45a049;
+        }
+
+    </style>
+</head>
+<body>
+<header>
+
+    <h1>Travel Broker</h1>
+    <script>
+        const url = new URL(window.location.href);
+        if (url.searchParams.get("loggedOut")) {
+            url.searchParams.delete("loggedOut");
+            window.history.replaceState({}, "", url);
+            window.location.reload(true); // Force reload to clear any cached authentication
+        }
+    </script>
+
+    #a th:href="@{/oauth2/authorization/auth0}" id="login-button">Login</a>
+    <div style="position: absolute; top: 20px; right: 20px;">
+        <a th:if="${#authentication == null}" th:href="@{/oauth2/authorization/auth0}" id="login-button">Login</a>
+        <a th:if="${#authentication != null}" th:href="@{/logout}" id="logout-button">Logout</a>
+        <p th:text="'Is logged in? ' + ${#authentication != null}"></p>
+
+    </div>
+
+</header>
+
+<nav>
+    <ul>
+        <li><a th:href="@{/}">Home</a></li>
+        <li><a th:href="@{/flights}">Flights</a></li>
+        <li><a th:href="@{/hotels}">Hotels</a></li>
+        <li><a th:href="@{/combo}">Hotels + Flights</a></li>
+    </ul>
+</nav>
+
+<main>
+    <div th:replace="~{${contentTemplate} :: content}">Loading...</div>
+</main>
+    <!-- content will go here -->
+
+<footer>
+    <p>&copy; 2025 Travel Broker</p>
+</footer>
+</body>
+</html>

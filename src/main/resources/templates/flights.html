@@ -1,0 +1,15 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<div th:fragment="content">
+    <h2>Book a Flight</h2>
+    <form th:action="@{/flights}" method="get">
+        <input type="text" name="from" placeholder="From">
+        <input type="text" name="to" placeholder="To">
+        <button type="submit">Search</button>
+    </form>
+
+    <ul>
+        <li th:each="flight : ${flights}" th:text="${flight}"></li>
+    </ul>
+</div>
+</html>

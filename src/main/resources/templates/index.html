@@ -1,18 +1,38 @@
+
+<!--<!DOCTYPE html>-->
+<!--<html xmlns:th="http://www.thymeleaf.org">-->
+<!--<head>-->
+<!--    <title>Home</title>-->
+<!--</head>-->
+<!--<body>-->
+<!--<h1>Welcome to the Broker App</h1>-->
+
+<!--<div th:if="${name != null}">-->
+<!--    <p>Hello <strong th:text="${name}">User</strong>!</p>-->
+<!--    <p>Email: <span th:text="${email}"></span></p>-->
+<!--    <img th:src="${picture}" alt="User Picture" width="80"/><br><br>-->
+
+<!--    <div th:if="${roles != null and #lists.contains(roles, 'manager')}">-->
+<!--    <a href="/manager/orders">Go to Manager Order Overview</a><br>-->
+<!--    </div>-->
+
+<!--    <a href="/logout">Logout</a>-->
+<!--</div>-->
+
+<!--<div th:if="${name == null}">-->
+<!--    <p>You are not logged in.</p>-->
+<!--    <a href="/oauth2/authorization/auth0">Login with Auth0</a>-->
+<!--</div>-->
+<!--</body>-->
+<!--</html>-->
+<!-- index.html -->
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org">
-<head>
-    <title>Auth0 Spring Boot Demo</title>
-</head>
-<body>
-<div th:if="${profile != null}">
-    <h2>Welcome, <span th:text="${profile['name']}"></span>!</h2>
-    <img th:src="${profile['picture']}" alt="User Picture" width="100"/>
-    <p>Email: <span th:text="${profile['email']}"></span></p>
-    <a href="/logout">Logout</a>
+<div th:fragment="content">
+    <h2>Welcome to Travel Broker</h2>
+    <p>Find and book your complete travel package — flights, hotels, or both.</p>
 </div>
-<div th:unless="${profile != null}">
-    <h2>You are not logged in</h2>
-    <a href="/oauth2/authorization/auth0">Login with Auth0</a>
-</div>
-</body>
+
 </html>
+
+
