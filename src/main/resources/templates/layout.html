@@ -67,26 +67,23 @@
 </head>
 <body>
 <header>
-
     <h1>Travel Broker</h1>
     <script>
         const url = new URL(window.location.href);
         if (url.searchParams.get("loggedOut")) {
             url.searchParams.delete("loggedOut");
             window.history.replaceState({}, "", url);
-            window.location.reload(true); // Force reload to clear any cached authentication
+            window.location.reload(true);
         }
     </script>
 
-    #a th:href="@{/oauth2/authorization/auth0}" id="login-button">Login</a>
     <div style="position: absolute; top: 20px; right: 20px;">
-        <a th:if="${#authentication == null}" th:href="@{/oauth2/authorization/auth0}" id="login-button">Login</a>
-        <a th:if="${#authentication != null}" th:href="@{/logout}" id="logout-button">Logout</a>
-        <p th:text="'Is logged in? ' + ${#authentication != null}"></p>
-
+        <a th:if="${!isLoggedIn}" th:href="@{/oauth2/authorization/auth0}" id="login-button">Login</a>
+        <a th:if="${isLoggedIn}" th:href="@{/logout}" id="logout-button">Logout</a>
     </div>
 
 </header>
+
 
 <nav>
     <ul>
