@@ -20,6 +20,12 @@ public class BrokerController {
         {
             isLoggedIn = false;
         }
+        if (user != null)
+        {
+            String idToken = user.getIdToken().getTokenValue();
+            System.out.println("\n\nID TOKEN:\n" + idToken + "\n");
+            model.addAttribute("name", user.getFullName());        }
+
         model.addAttribute("isLoggedIn", isLoggedIn);
         model.addAttribute("title", "Home");
         model.addAttribute("contentTemplate", "index");
