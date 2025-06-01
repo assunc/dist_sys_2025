@@ -41,9 +41,11 @@ public class MenuEndpoint {
     @ResponsePayload
     public GetRoomResponse getRoom(@RequestPayload GetRoomRequest request) {
         GetRoomResponse response = new GetRoomResponse();
-        Optional<Room> room = roomRepository.findById(request.getNumber());
+        Optional<Room> room = roomRepository.findById(request.getRoomId());
         if (room.isPresent()) {
             RoomXml roomXml = new RoomXml();
+            roomXml.setRoomId(room.get().getId());
+            roomXml.setHotelId(room.get().getHotelId());
             roomXml.setNumber(room.get().getNumber());
             roomXml.setNOfPeople(room.get().getPeople());
             roomXml.setPrice(room.get().getPrice().intValue());
@@ -79,8 +81,8 @@ public class MenuEndpoint {
     @ResponsePayload
     public AddBookingResponse addBooking(@RequestPayload AddBookingRequest request) {
         AddBookingResponse response = new AddBookingResponse();
-        for (int roomNumber : request.getRoomNumber()) {
-            Booking booking = hotelServices.addBooking(roomNumber, request.getStartDate(), request.getEndDate());
+        for (int roomId : request.getRoomId()) {
+            Booking booking = hotelServices.addBooking(roomId, request.getStartDate(), request.getEndDate());
             if (booking != null) {
                 response.getBookingId().add(booking.getId());
                 response.getStatus().add(BookingStatus.fromValue(booking.getStatus()));

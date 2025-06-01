@@ -10,7 +10,7 @@ public class Booking {
     private Integer id;
 
     @ManyToOne
-    @JoinColumn(name = "room_number")
+    @JoinColumn(name = "room_id")
     private Room room;
 
     @Column(name = "start_date")

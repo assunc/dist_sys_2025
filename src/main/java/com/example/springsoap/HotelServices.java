@@ -30,7 +30,7 @@ public class HotelServices {
     public boolean isRoomBooked(Room room, XMLGregorianCalendar start, XMLGregorianCalendar end) {
         for (Booking booking : bookingRepository.findAll()) {
             if ((booking.getStatus().equals(BookingStatus.RESERVED.toString()) || booking.getStatus().equals(BookingStatus.PENDING.toString())) &&
-                    booking.getRoom().getNumber().compareTo(room.getNumber()) == 0 &&
+                    booking.getRoom().getId().compareTo(room.getId()) == 0 &&
                     localDateToXMLGC(booking.getStartDate()).toGregorianCalendar().compareTo(end.toGregorianCalendar()) < 0 &&
                     localDateToXMLGC(booking.getEndDate()).toGregorianCalendar().compareTo(start.toGregorianCalendar()) > 0) {
                 return true;
@@ -39,9 +39,9 @@ public class HotelServices {
         return false;
     }
 
-    public Booking addBooking(int roomNumber, XMLGregorianCalendar startDate, XMLGregorianCalendar endDate) {
-        Room room = roomRepository.findByNumber(roomNumber)
-                .orElseThrow(() -> new IllegalArgumentException("Room number not found: " + roomNumber));
+    public Booking addBooking(int roomId, XMLGregorianCalendar startDate, XMLGregorianCalendar endDate) {
+        Room room = roomRepository.findById(roomId)
+                .orElseThrow(() -> new IllegalArgumentException("Room id not found: " + roomId));
         if (!isRoomBooked(room, startDate, endDate)) {
             Booking booking = new Booking();
             booking.setRoom(room);

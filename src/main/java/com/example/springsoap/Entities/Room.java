@@ -8,13 +8,21 @@ import java.math.BigDecimal;
 public class Room {
 
     @Id
+    private Integer id;
+
     private Integer number;
 
     private Integer people;
 
     private BigDecimal price;
 
+    private Integer hotelId;
+
     // Getters and setters
+
+    public Integer getId() {
+        return id;
+    }
 
     public Integer getNumber() {
         return number;
@@ -38,5 +46,13 @@ public class Room {
 
     public void setPrice(BigDecimal price) {
         this.price = price;
+    }
+
+    public Integer getHotelId() {
+        return hotelId;
+    }
+
+    public void setNHotelId(Integer hotelId) {
+        this.hotelId = hotelId;
     }
 }
