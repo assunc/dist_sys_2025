@@ -1,5 +1,6 @@
 package com.example.springsoap.Entities;
 
+import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.Id;
 import java.math.BigDecimal;
@@ -16,6 +17,7 @@ public class Room {
 
     private BigDecimal price;
 
+    @Column(name = "hotel_id")
     private Integer hotelId;
 
     // Getters and setters

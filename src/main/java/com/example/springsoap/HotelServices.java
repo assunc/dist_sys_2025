@@ -29,7 +29,7 @@ public class HotelServices {
 
     public boolean isRoomBooked(Room room, XMLGregorianCalendar start, XMLGregorianCalendar end) {
         for (Booking booking : bookingRepository.findAll()) {
-            if ((booking.getStatus().equals(BookingStatus.RESERVED.toString()) || booking.getStatus().equals(BookingStatus.PENDING.toString())) &&
+            if ((booking.getStatus().equalsIgnoreCase(BookingStatus.BOOKED.toString()) || booking.getStatus().equalsIgnoreCase(BookingStatus.PENDING.toString())) &&
                     booking.getRoom().getId().compareTo(room.getId()) == 0 &&
                     localDateToXMLGC(booking.getStartDate()).toGregorianCalendar().compareTo(end.toGregorianCalendar()) < 0 &&
                     localDateToXMLGC(booking.getEndDate()).toGregorianCalendar().compareTo(start.toGregorianCalendar()) > 0) {
@@ -47,7 +47,7 @@ public class HotelServices {
             booking.setRoom(room);
             booking.setStartDate(XMLGCtoLocalDate(startDate));
             booking.setEndDate(XMLGCtoLocalDate(endDate));
-            booking.setStatus("Pending");
+            booking.setStatus(BookingStatus.PENDING.toString());
             bookingRepository.save(booking);
             return booking;
         }

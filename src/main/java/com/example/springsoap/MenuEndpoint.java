@@ -63,6 +63,8 @@ public class MenuEndpoint {
         for (Room room : roomRepository.findAll()) {
             if (!hotelServices.isRoomBooked(room, request.getStartDate(), request.getEndDate())) {
                 RoomXml roomXml = new RoomXml();
+                roomXml.setRoomId(room.getId());
+                roomXml.setHotelId(room.getHotelId());
                 roomXml.setNumber(room.getNumber());
                 roomXml.setNOfPeople(room.getPeople());
                 roomXml.setPrice(room.getPrice().intValue());
@@ -102,11 +104,11 @@ public class MenuEndpoint {
             Booking booking = bookingRepository.findById(bookingId).orElseThrow(
                     () -> new IllegalArgumentException("Booking Id not found: " + bookingId));
             if (booking.getStatus().equals(BookingStatus.PENDING.toString())) {
-                booking.setStatus(String.valueOf(BookingStatus.RESERVED));
+                booking.setStatus(String.valueOf(BookingStatus.BOOKED));
                 bookingRepository.save(booking);
             }
         }
-        response.setStatus(BookingStatus.RESERVED);
+        response.setStatus(BookingStatus.BOOKED);
         return response;
     }
 

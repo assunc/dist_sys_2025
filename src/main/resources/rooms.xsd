@@ -107,10 +107,11 @@
 
     <xs:simpleType name="bookingStatus">
         <xs:restriction base="xs:string">
-            <xs:enumeration value="Pending"/>
-            <xs:enumeration value="Canceled"/>
-            <xs:enumeration value="Reserved"/>
-            <xs:enumeration value="Not available"/>
+            <xs:enumeration value="pending"/>
+            <xs:enumeration value="canceled"/>
+            <xs:enumeration value="booked"/>
+            <xs:enumeration value="failed"/>
+            <xs:enumeration value="not available"/>
         </xs:restriction>
     </xs:simpleType>
 
