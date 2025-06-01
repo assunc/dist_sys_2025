@@ -11,10 +11,9 @@
         </wsse:Security>
     </soapenv:Header>
     <soapenv:Body>
-        <gs:getFreeRoomsRequest>
+        <gs:getFreeHotelsRequest>
             <gs:startDate>2025-05-08</gs:startDate>
             <gs:endDate>2025-05-13</gs:endDate>
-            <gs:hotelId>1</gs:hotelId>
-        </gs:getFreeRoomsRequest>
+        </gs:getFreeHotelsRequest>
     </soapenv:Body>
 </soapenv:Envelope>

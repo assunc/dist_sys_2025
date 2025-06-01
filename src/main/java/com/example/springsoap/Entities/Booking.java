@@ -9,9 +9,8 @@ public class Booking {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
 
-    @ManyToOne
-    @JoinColumn(name = "room_id")
-    private Room room;
+    @Column(name = "room_id")
+    private Integer roomId;
 
     @Column(name = "start_date")
     private LocalDate startDate;
@@ -32,12 +31,12 @@ public class Booking {
         this.id = id;
     }
 
-    public Room getRoom() {
-        return room;
+    public Integer getRoomId() {
+        return roomId;
     }
 
-    public void setRoom(Room room) {
-        this.room = room;
+    public void setRoomId(Integer roomId) {
+        this.roomId = roomId;
     }
 
     public LocalDate getStartDate() {

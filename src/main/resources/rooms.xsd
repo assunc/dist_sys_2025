@@ -22,6 +22,7 @@
             <xs:sequence>
                 <xs:element name="startDate" type="xs:date"/>
                 <xs:element name="endDate" type="xs:date"/>
+                <xs:element name="hotelId" type="xs:int"/>
             </xs:sequence>
         </xs:complexType>
     </xs:element>
@@ -30,6 +31,23 @@
         <xs:complexType>
             <xs:sequence>
                 <xs:element name="rooms" type="tns:roomXml" minOccurs="0" maxOccurs="unbounded"/>
+            </xs:sequence>
+        </xs:complexType>
+    </xs:element>
+
+    <xs:element name="getFreeHotelsRequest">
+        <xs:complexType>
+            <xs:sequence>
+                <xs:element name="startDate" type="xs:date"/>
+                <xs:element name="endDate" type="xs:date"/>
+            </xs:sequence>
+        </xs:complexType>
+    </xs:element>
+
+    <xs:element name="getFreeHotelsResponse">
+        <xs:complexType>
+            <xs:sequence>
+                <xs:element name="hotels" type="tns:HotelInfoXml" minOccurs="0" maxOccurs="unbounded"/>
             </xs:sequence>
         </xs:complexType>
     </xs:element>
@@ -89,7 +107,6 @@
         <xs:sequence>
             <xs:element name="roomId" type="xs:int"/>
             <xs:element name="hotelId" type="xs:int"/>
-            <xs:element name="hotelName" type="xs:string"/>
             <xs:element name="number" type="xs:int"/>
             <xs:element name="nOfPeople" type="xs:int"/>
             <xs:element name="price" type="xs:int"/>
@@ -124,6 +141,7 @@
             <xs:element name="city" type="xs:string"/>
             <xs:element name="country" type="xs:string"/>
             <xs:element name="phoneNumber" type="xs:string"/>
+            <xs:element name="description" type="xs:string"/>
         </xs:sequence>
     </xs:complexType>
 

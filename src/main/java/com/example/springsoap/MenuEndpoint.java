@@ -6,6 +6,7 @@ import java.util.Optional;
 
 import com.example.springsoap.Entities.Room;
 import com.example.springsoap.Entities.Booking;
+import com.example.springsoap.Entities.Hotelinfo;
 import com.example.springsoap.Repositories.BookingRepository;
 import com.example.springsoap.Repositories.RoomRepository;
 import com.example.springsoap.Repositories.HotelinfoRepository;
@@ -42,7 +43,6 @@ public class MenuEndpoint {
             RoomXml roomXml = new RoomXml();
             roomXml.setRoomId(room.get().getId());
             roomXml.setHotelId(room.get().getHotelId());
-            roomXml.setHotelName(hotelInfoRepository.findById(room.get().getHotelId()).get().getName());
             roomXml.setNumber(room.get().getNumber());
             roomXml.setNOfPeople(room.get().getPeople());
             roomXml.setPrice(room.get().getPrice().intValue());
@@ -57,12 +57,11 @@ public class MenuEndpoint {
     public GetFreeRoomsResponse getFreeRooms(@RequestPayload GetFreeRoomsRequest request) {
         List<RoomXml> freeRooms = new ArrayList<>();
 
-        for (Room room : roomRepository.findAll()) {
+        for (Room room : roomRepository.findAllByHotelId(request.getHotelId())) {
             if (!hotelServices.isRoomBooked(room, request.getStartDate(), request.getEndDate())) {
                 RoomXml roomXml = new RoomXml();
                 roomXml.setRoomId(room.getId());
                 roomXml.setHotelId(room.getHotelId());
-                roomXml.setHotelName(hotelInfoRepository.findById(room.getHotelId()).get().getName());
                 roomXml.setNumber(room.getNumber());
                 roomXml.setNOfPeople(room.getPeople());
                 roomXml.setPrice(room.getPrice().intValue());
@@ -72,6 +71,35 @@ public class MenuEndpoint {
 
         GetFreeRoomsResponse response = new GetFreeRoomsResponse();
         response.getRooms().addAll(freeRooms);
+
+        return response;
+    }
+
+    @PayloadRoot(namespace = NAMESPACE_URI, localPart = "getFreeHotelsRequest")
+    @ResponsePayload
+    public GetFreeHotelsResponse getFreeHotels(@RequestPayload GetFreeHotelsRequest request) {
+        List<HotelInfoXml> freeHotels = new ArrayList<>();
+
+        for (Hotelinfo hotel : hotelInfoRepository.findAll()) {
+            for (Room room : roomRepository.findAllByHotelId(hotel.getId())) {
+                if (!hotelServices.isRoomBooked(room, request.getStartDate(), request.getEndDate())) {
+                    HotelInfoXml hotelXml = new HotelInfoXml();
+                    hotelXml.setId(hotel.getId());
+                    hotelXml.setName(hotel.getName());
+                    hotelXml.setAddress(hotel.getAddress());
+                    hotelXml.setCity(hotel.getCity());
+                    hotelXml.setCountry(hotel.getCountry());
+                    hotelXml.setPhoneNumber(hotel.getPhoneNumber());
+                    hotelXml.setDescription(hotel.getDescription());
+
+                    freeHotels.add(hotelXml);
+                    break;
+                }
+            }
+        }
+
+        GetFreeHotelsResponse response = new GetFreeHotelsResponse();
+        response.getHotels().addAll(freeHotels);
 
         return response;
     }

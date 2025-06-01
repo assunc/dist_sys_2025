@@ -18,8 +18,10 @@ public class Hotelinfo {
 
     private String country;
 
-    @Column(name = "hotel_id")
+    @Column(name = "phone_number")
     private String phoneNumber;
+
+    private String description;
 
     // Getters and setters
 
@@ -65,5 +67,13 @@ public class Hotelinfo {
 
     public void setPhoneNumber(String phoneNumber) {
         this.phoneNumber = phoneNumber;
+    }
+
+    public String getDescription() {
+        return description;
+    }
+
+    public void setDescription(String description) {
+        this.description = description;
     }
 }
