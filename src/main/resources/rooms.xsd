@@ -17,6 +17,22 @@
         </xs:complexType>
     </xs:element>
 
+    <xs:element name="getHotelRequest">
+        <xs:complexType>
+            <xs:sequence>
+                <xs:element name="hotelId" type="xs:int"/>
+            </xs:sequence>
+        </xs:complexType>
+    </xs:element>
+
+    <xs:element name="getHotelResponse">
+        <xs:complexType>
+            <xs:sequence>
+                <xs:element name="hotel" type="tns:HotelInfoXml"/>
+            </xs:sequence>
+        </xs:complexType>
+    </xs:element>
+
     <xs:element name="getFreeRoomsRequest">
         <xs:complexType>
             <xs:sequence>

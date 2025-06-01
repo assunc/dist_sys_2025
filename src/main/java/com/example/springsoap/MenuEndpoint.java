@@ -52,6 +52,26 @@ public class MenuEndpoint {
         return response;
     }
 
+    @PayloadRoot(namespace = NAMESPACE_URI, localPart = "getHotelRequest")
+    @ResponsePayload
+    public GetHotelResponse getRoom(@RequestPayload GetHotelRequest request) {
+        GetHotelResponse response = new GetHotelResponse();
+        Optional<Hotelinfo> hotel = hotelInfoRepository.findById(request.getHotelId());
+        if (hotel.isPresent()) {
+            HotelInfoXml hotelXml = new HotelInfoXml();
+            hotelXml.setId(hotel.get().getId());
+            hotelXml.setName(hotel.get().getName());
+            hotelXml.setAddress(hotel.get().getAddress());
+            hotelXml.setCity(hotel.get().getCity());
+            hotelXml.setCountry(hotel.get().getCountry());
+            hotelXml.setPhoneNumber(hotel.get().getPhoneNumber());
+            hotelXml.setDescription(hotel.get().getDescription());
+            response.setHotel(hotelXml);
+        }
+
+        return response;
+    }
+
     @PayloadRoot(namespace = NAMESPACE_URI, localPart = "getFreeRoomsRequest")
     @ResponsePayload
     public GetFreeRoomsResponse getFreeRooms(@RequestPayload GetFreeRoomsRequest request) {
