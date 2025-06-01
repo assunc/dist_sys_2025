@@ -2,21 +2,19 @@ package com.example.springsoap;
 
 import java.util.List;
 import java.util.ArrayList;
-import java.util.Objects;
 import java.util.Optional;
 
 import com.example.springsoap.Entities.Room;
 import com.example.springsoap.Entities.Booking;
 import com.example.springsoap.Repositories.BookingRepository;
 import com.example.springsoap.Repositories.RoomRepository;
+import com.example.springsoap.Repositories.HotelinfoRepository;
 import io.foodmenu.gt.webservice.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.ws.server.endpoint.annotation.Endpoint;
 import org.springframework.ws.server.endpoint.annotation.PayloadRoot;
 import org.springframework.ws.server.endpoint.annotation.RequestPayload;
 import org.springframework.ws.server.endpoint.annotation.ResponsePayload;
-
-import javax.swing.text.html.parser.Entity;
 
 
 @Endpoint
@@ -30,12 +28,10 @@ public class MenuEndpoint {
     private RoomRepository roomRepository;
 
     @Autowired
-    private HotelServices hotelServices;
+    private HotelinfoRepository hotelInfoRepository;
 
-//    @Autowired
-//    public MenuEndpoint(HotelServices hotelServices) {
-//        this.hotelServices = hotelServices;
-//    }
+    @Autowired
+    private HotelServices hotelServices;
 
     @PayloadRoot(namespace = NAMESPACE_URI, localPart = "getRoomRequest")
     @ResponsePayload
@@ -46,6 +42,7 @@ public class MenuEndpoint {
             RoomXml roomXml = new RoomXml();
             roomXml.setRoomId(room.get().getId());
             roomXml.setHotelId(room.get().getHotelId());
+            roomXml.setHotelName(hotelInfoRepository.findById(room.get().getHotelId()).get().getName());
             roomXml.setNumber(room.get().getNumber());
             roomXml.setNOfPeople(room.get().getPeople());
             roomXml.setPrice(room.get().getPrice().intValue());
@@ -65,6 +62,7 @@ public class MenuEndpoint {
                 RoomXml roomXml = new RoomXml();
                 roomXml.setRoomId(room.getId());
                 roomXml.setHotelId(room.getHotelId());
+                roomXml.setHotelName(hotelInfoRepository.findById(room.getHotelId()).get().getName());
                 roomXml.setNumber(room.getNumber());
                 roomXml.setNOfPeople(room.getPeople());
                 roomXml.setPrice(room.getPrice().intValue());
