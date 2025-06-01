@@ -18,6 +18,7 @@ import org.springframework.security.oauth2.core.oidc.user.OidcUser;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.logout.LogoutSuccessHandler;
 import org.springframework.web.util.UriComponentsBuilder;
+import org.springframework.web.client.RestTemplate;
 
 import java.util.*;
 
@@ -25,8 +26,10 @@ import java.util.*;
 @EnableMethodSecurity
 public class SecurityConfig {
 
-
-
+    @Bean
+    public RestTemplate restTemplate() {
+        return new RestTemplate();
+    }
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
