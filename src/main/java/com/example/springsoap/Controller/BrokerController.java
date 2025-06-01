@@ -163,9 +163,9 @@ public class BrokerController {
 
             // Parse the SOAP response
             DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
-            // Important for XPath to work correctly with namespaces
             factory.setNamespaceAware(true);
             DocumentBuilder builder = factory.newDocumentBuilder();
+            assert responseBody != null;
             Document doc = builder.parse(new InputSource(new StringReader(responseBody)));
 
             XPathFactory xpathFactory = XPathFactory.newInstance();
@@ -185,7 +185,6 @@ public class BrokerController {
 
             // XPath to find all room elements (now using 'ns2' prefix)
             NodeList roomNodes = (NodeList) xpath.evaluate("//ns2:rooms", doc, XPathConstants.NODESET);
-            System.out.println("Number of roomNodes found by XPath: " + roomNodes.getLength());
 
             for (int i = 0; i < roomNodes.getLength(); i++) {
                 org.w3c.dom.Element roomElement = (org.w3c.dom.Element) roomNodes.item(i);
@@ -204,15 +203,11 @@ public class BrokerController {
                 int roomNOfPeople = Integer.parseInt(roomNOfPeopleStr);
                 int roomPrice = Integer.parseInt(roomPriceStr);
 
-                System.out.println("Parsed Room - Number: " + roomNumber + ", People: " + roomNOfPeople + ", Price: " + roomPrice);
-
                 // Apply filtering logic
                 if (roomNOfPeople >= numberOfPeople) {
                     filteredRooms.add(new Room(roomNumber, roomNOfPeople, roomPrice));
                 }
             }
-            System.out.println("Number of filteredRooms after applying criteria: " + filteredRooms.size());
-
             model.addAttribute("rooms", filteredRooms);
             model.addAttribute("searchPerformed", true);
             model.addAttribute("hasRooms", !filteredRooms.isEmpty());
