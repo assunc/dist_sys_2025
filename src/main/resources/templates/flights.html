@@ -2,11 +2,106 @@
 <html xmlns:th="http://www.thymeleaf.org">
 <div th:fragment="content">
     <h2>Book a Flight</h2>
-    <form th:action="@{/flights}" method="get">
-        <input type="text" name="from" placeholder="From">
-        <input type="text" name="to" placeholder="To">
-        <button type="submit">Search</button>
+    <form action="#" method="get" style="
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background-color: white;
+    border: 2px solid #febb02;
+    border-radius: 12px;
+    padding: 12px;
+    max-width: 1100px;
+    margin: 0 auto 30px auto;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+">
+
+        <!-- FROM -->
+        <div style="display: flex; align-items: center; background-color: #f2f2f2; padding: 10px 12px; border-radius: 8px; flex: 1;">
+            <i class="fa-solid fa-plane-departure" style="margin-right: 8px; font-size: 18px; color: #555;"></i>
+
+            <input type="text" name="from" placeholder="Brussels All airports" style="
+            border: none;
+            background: transparent;
+            outline: none;
+            font-size: 16px;
+            width: 100%;
+        ">
+        </div>
+
+        <!-- SWAP BUTTON -->
+        <button type="button" style="
+            background-color: white;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            padding: 10px;
+            cursor: pointer;
+        ">
+            <i class="fa-solid fa-right-left" style="font-size: 18px; color: #555;"></i>
+        </button>
+
+        <!-- TO -->
+        <div style="display: flex; align-items: center; background-color: #f2f2f2; padding: 10px 12px; border-radius: 8px; flex: 1;">
+            <i class="fa-solid fa-location-dot" style="margin-right: 8px; font-size: 18px; color: #555;"></i>
+            <input type="text" name="to" placeholder="Where to?" style="
+            border: none;
+            background: transparent;
+            outline: none;
+            font-size: 16px;
+            width: 100%;
+        ">
+        </div>
+
+        <!-- DATES -->
+        <div style="display: flex; align-items: center; background-color: #f2f2f2; padding: 10px 12px; border-radius: 8px; flex: 2; gap: 8px;">
+            <i class="fa-solid fa-calendar-days" style="margin-right: 8px; font-size: 18px; color: #555;"></i>
+
+            <input type="date" name="checkin" style="
+                border: none;
+                background: white;
+                outline: none;
+                font-size: 16px;
+                border-radius: 6px;
+                padding: 6px;
+                flex: 1;
+            ">
+            <input type="date" name="checkout" style="
+                border: none;
+                background: white;
+                outline: none;
+                font-size: 16px;
+                border-radius: 6px;
+                padding: 6px;
+                flex: 1;
+            ">
+        </div>
+
+        <!-- PASSENGERS -->
+        <div style="display: flex; align-items: center; background-color: #f2f2f2; padding: 10px 12px; border-radius: 8px; flex: 0.8;">
+            <i class="fa-solid fa-bed" style="margin-right: 8px; font-size: 18px; color: #555;"></i>
+            <input type="text" name="passengers" placeholder="1 adult" style="
+                border: none;
+                background: transparent;
+                outline: none;
+                font-size: 16px;
+                width: 100%;
+            ">
+        </div>
+
+        <!-- SEARCH BUTTON -->
+        <button type="submit" style="
+            padding: 12px 24px;
+            font-size: 16px;
+            background-color: #0071c2;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+        ">Search</button>
     </form>
+    <ul>
+            <li th:each="flight : ${flights}" th:text="${flight}"></li>
+        </ul>
+    </div>
 
     <ul>
         <li th:each="flight : ${flights}" th:text="${flight}"></li>

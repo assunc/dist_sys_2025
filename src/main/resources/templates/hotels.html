@@ -4,7 +4,7 @@
     <h2>Book a Hotel</h2>
     <p>Search and reserve available hotels at your travel destination.</p>
 
-    <div class="container my-5">
+    <div clas="container my-5">
         <h3>Find Available Hotels</h3>
         <form th:action="@{/hotels}" method="post" class="row g-3 align-items-end">
             <div class="col-md-4">
@@ -46,3 +46,79 @@
     </div>
 </div>
 </html>
+    <div th:fragment="content">
+        <form action="#" method="get" style="
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background-color: white;
+            border: 2px solid #febb02;
+            border-radius: 12px;
+            padding: 12px;
+            max-width: 1000px;
+            margin: 0 auto 30px auto;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+        ">
+            <!-- DESTINATION -->
+            <div style="display: flex; align-items: center; background-color: #f2f2f2; padding: 10px 12px; border-radius: 8px; flex: 2;">
+                <i class="fa-solid fa-bed" style="margin-right: 8px; font-size: 18px; color: #555;"></i>
+                <input type="text" name="destination" placeholder="Where are you going?" style="
+            border: none;
+            background: transparent;
+            outline: none;
+            font-size: 16px;
+            width: 100%;
+        ">
+            </div>
+
+            <!-- DATES -->
+            <div style="display: flex; align-items: center; background-color: #f2f2f2; padding: 10px 12px; border-radius: 8px; flex: 2; gap: 8px;">
+                <i class="fa-solid fa-calendar-days" style="margin-right: 8px; font-size: 18px; color: #555;"></i>
+                <input type="date" name="checkin" style="
+                    border: none;
+                    background: white;
+                    outline: none;
+                    font-size: 16px;
+                    border-radius: 6px;
+                    padding: 6px;
+                    flex: 1;
+                ">
+                <input type="date" name="checkout" style="
+                    border: none;
+                    background: white;
+                    outline: none;
+                    font-size: 16px;
+                    border-radius: 6px;
+                    padding: 6px;
+                    flex: 1;
+                ">
+            </div>
+
+            <!-- GUESTS -->
+            <div style="display: flex; align-items: center; background-color: #f2f2f2; padding: 10px 12px; border-radius: 8px; flex: 1.2;">
+                <i class="fa-solid fa-user" style="margin-right: 8px; font-size: 18px; color: #555;"></i>
+
+                <input type="text" name="guests" placeholder="2 adults · 0 children · 1 room" style="
+                    border: none;
+                    background: transparent;
+                    outline: none;
+                    font-size: 16px;
+                    width: 100%;
+                ">
+            </div>
+
+            <!-- SEARCH BUTTON -->
+            <button type="submit" style="
+                padding: 12px 24px;
+                font-size: 16px;
+                background-color: #0071c2;
+                color: white;
+                border: none;
+                border-radius: 8px;
+                cursor: pointer;
+    ">Search</button>
+        </form>
+
+    </div>
+</html>
+
