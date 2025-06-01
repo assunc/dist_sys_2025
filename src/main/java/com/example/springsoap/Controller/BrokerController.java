@@ -1,4 +1,5 @@
 package com.example.springsoap.Controller;
+import com.example.springsoap.UserService;
 
 import jakarta.servlet.http.HttpSession;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -12,7 +13,11 @@ import java.util.List;
 
 @Controller
 public class BrokerController {
+    private final UserService userService;
 
+    public BrokerController(UserService userService) {
+        this.userService = userService;
+    }
     @GetMapping("/")
     public String home(@AuthenticationPrincipal OidcUser user, Model model) {
         boolean isLoggedIn = true;
@@ -22,6 +27,8 @@ public class BrokerController {
         }
         if (user != null)
         {
+            userService.findOrCreateFromOidcUser(user);
+
             String idToken = user.getIdToken().getTokenValue();
             System.out.println("\n\nID TOKEN:\n" + idToken + "\n");
             model.addAttribute("name", user.getFullName());        }
