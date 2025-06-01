@@ -1,11 +1,11 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org">
 <div th:fragment="content">
-    <h2>Book a Hotel</h2>
-    <p>Search and reserve available hotels at your travel destination.</p>
+    <h2>Book a Room</h2>
+    <p>Search and reserve available rooms at this Hotel.</p>
 
     <div class="container my-5">
-        <h3>Find Available Hotels</h3>
+        <h3>Find Available Rooms</h3>
         <form th:action="@{/hotels}" method="post" class="row g-3 align-items-end">
             <div class="col-md-4">
                 <label for="startDate" class="form-label">Start Date:</label>
@@ -32,14 +32,12 @@
 
             <ul id="hotelsList" class="list-group">
                 <li th:each="hotel : ${hotels}" class="list-group-item">
-                    <a href="hotel-info.html" th:href="@{/hotel-info/{hotelId}(hotelId=${hotel.id})}">
-                        <span th:text="${hotel.name}"></span>, in
-                        <span th:text="${hotel.city}"></span>, <span th:text="${hotel.country}"></span>
-                    </a>
+                    <span th:text="${hotel.name}"></span>, in
+                    <span th:text="${hotel.city}"></span>, <span th:text="${hotel.country}"></span>
                 </li>
             </ul>
 
-            <p th:if="${searchPerformed and !hasHotels and !error}" class="text-muted">No hotels found for the selected criteria.</p>
+            <p th:if="${searchPerformed and hasHotels and !error}" class="text-muted">No hotels found for the selected criteria.</p>
         </div>
     </div>
 </div>
