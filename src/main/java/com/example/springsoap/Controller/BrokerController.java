@@ -38,11 +38,24 @@ import java.util.List;
 public class BrokerController {
     private final UserService userService;
     private final RestTemplate restTemplate;
+    private final XPath xpath;
 
     @Autowired
     public BrokerController(UserService userService, RestTemplate restTemplate) {
         this.userService = userService;
         this.restTemplate = restTemplate;
+        xpath = XPathFactory.newInstance().newXPath();
+        // Register a custom NamespaceContext to handle "ns2" and other namespaces
+        xpath.setNamespaceContext(new javax.xml.namespace.NamespaceContext() {
+            public String getNamespaceURI(String prefix) {
+                // Map "ns2" to the correct namespace URI from the response
+                if (prefix.equals("ns2")) return "http://foodmenu.io/gt/webservice";
+                if (prefix.equals("SOAP-ENV")) return "http://schemas.xmlsoap.org/soap/envelope/";
+                return null;
+            }
+            public String getPrefix(String namespaceURI) { return null; }
+            public java.util.Iterator<String> getPrefixes(String namespaceURI) { return null; } // Corrected type
+        });
     }
 
 
@@ -105,60 +118,42 @@ public class BrokerController {
         // Manually construct SOAP request XML
         String soapRequest = String.format(
                 "<soapenv:Envelope xmlns:soapenv=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns:web=\"http://foodmenu.io/gt/webservice\">\n" +
-                        "   <soapenv:Header>\n" +
-                        "       <wsse:Security soapenv:mustUnderstand=\"1\" xmlns:wsse=\"http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-secext-1.0.xsd\" xmlns:wsu=\"http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-utility-1.0.xsd\">\n" +
-                        "           <wsse:UsernameToken wsu:Id=\"UsernameToken-90EE12B980F2A1E63C16196236965155\">\n" +
-                        "               <wsse:Username>brokerApp</wsse:Username>\n" +
-                        "               <wsse:Password Type=\"http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-username-token-profile-1.0#PasswordText\">$2a$10$t39txwmagJ8611gPSQyJxeV5BlH6MQKLzxTRo4uKFDijXup0cUzAG</wsse:Password>\n" +
-                        "           </wsse:UsernameToken>\n" +
-                        "       </wsse:Security>\n" +
-                        "   </soapenv:Header>\n" +
-                        "   <soapenv:Body>\n" +
-                        "      <web:getFreeHotelsRequest>\n" +
-                        "         <web:startDate>%s</web:startDate>\n" +
-                        "         <web:endDate>%s</web:endDate>\n" +
-                        "      </web:getFreeHotelsRequest>\n" +
-                        "   </soapenv:Body>\n" +
-                        "</soapenv:Envelope>",
+                "   <soapenv:Header>\n" +
+                "       <wsse:Security soapenv:mustUnderstand=\"1\" xmlns:wsse=\"http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-secext-1.0.xsd\" xmlns:wsu=\"http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-utility-1.0.xsd\">\n" +
+                "           <wsse:UsernameToken wsu:Id=\"UsernameToken-90EE12B980F2A1E63C16196236965155\">\n" +
+                "               <wsse:Username>brokerApp</wsse:Username>\n" +
+                "               <wsse:Password Type=\"http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-username-token-profile-1.0#PasswordText\">$2a$10$t39txwmagJ8611gPSQyJxeV5BlH6MQKLzxTRo4uKFDijXup0cUzAG</wsse:Password>\n" +
+                "           </wsse:UsernameToken>\n" +
+                "       </wsse:Security>\n" +
+                "   </soapenv:Header>\n" +
+                "   <soapenv:Body>\n" +
+                "      <web:getFreeHotelsRequest>\n" +
+                "         <web:startDate>%s</web:startDate>\n" +
+                "         <web:endDate>%s</web:endDate>\n" +
+                "      </web:getFreeHotelsRequest>\n" +
+                "   </soapenv:Body>\n" +
+                "</soapenv:Envelope>",
                 dateFormat.format(startDate), dateFormat.format(endDate)
         );
 
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.TEXT_XML);
-        headers.set("SOAPAction", "http://foodmenu.io/gt/webservice/getFreeRoomsRequest"); // This SOAPAction is crucial
-
-        HttpEntity<String> entity = new HttpEntity<>(soapRequest, headers);
 
         List<Hotel> freeHotels = new ArrayList<>();
         String hotelSupplierUrl = "http://hotelsupplier.azurewebsites.net:80/ws";
 
         try {
-            ResponseEntity<String> response = restTemplate.postForEntity(hotelSupplierUrl, entity, String.class);
+            ResponseEntity<String> response = restTemplate.postForEntity(hotelSupplierUrl, new HttpEntity<>(soapRequest, headers), String.class);
             String responseBody = response.getBody();
-
-            // Parse the SOAP response
-            DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
-            factory.setNamespaceAware(true);
             assert responseBody != null;
 
-            XPath xpath = XPathFactory.newInstance().newXPath();
-            // Register a custom NamespaceContext to handle "ns2" and other namespaces
-            xpath.setNamespaceContext(new javax.xml.namespace.NamespaceContext() {
-                public String getNamespaceURI(String prefix) {
-                    // Map "ns2" to the correct namespace URI from the response
-                    if (prefix.equals("ns2")) return "http://foodmenu.io/gt/webservice";
-                    if (prefix.equals("SOAP-ENV")) return "http://schemas.xmlsoap.org/soap/envelope/";
-                    return null;
-                }
-                public String getPrefix(String namespaceURI) { return null; }
-                public java.util.Iterator<String> getPrefixes(String namespaceURI) { return null; } // Corrected type
-            });
-
+            DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+            factory.setNamespaceAware(true);
             // XPath to find all hotel elements (now using 'ns2' prefix)
-            NodeList roomNodes = (NodeList) xpath.evaluate("//ns2:hotels", factory.newDocumentBuilder().parse(new InputSource(new StringReader(responseBody))), XPathConstants.NODESET);
+            NodeList hotelNodes = (NodeList) xpath.evaluate("//ns2:hotels", factory.newDocumentBuilder().parse(new InputSource(new StringReader(responseBody))), XPathConstants.NODESET);
 
-            for (int i = 0; i < roomNodes.getLength(); i++) {
-                org.w3c.dom.Element roomElement = (org.w3c.dom.Element) roomNodes.item(i);
+            for (int i = 0; i < hotelNodes.getLength(); i++) {
+                org.w3c.dom.Element roomElement = (org.w3c.dom.Element) hotelNodes.item(i);
                 freeHotels.add(new Hotel(
                         Integer.parseInt(xpath.evaluate("ns2:id", roomElement)),
                         xpath.evaluate("ns2:name", roomElement),
@@ -191,18 +186,147 @@ public class BrokerController {
         return "layout";
     }
 
-    @GetMapping("/hotel-info/{hotelId}")
-    public String hotelInfo(@PathVariable int hotelId, @AuthenticationPrincipal OidcUser user, Model model) {
+    @PostMapping("/hotel-info/{hotelId}")
+    public String hotelInfo(@PathVariable int hotelId,
+                            @RequestParam("startDate") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) Date startDate,
+                            @RequestParam("endDate") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) Date endDate,
+                            @RequestParam("numberOfPeople") int numberOfPeople,
+                            @AuthenticationPrincipal OidcUser user, Model model
+    ) {
         boolean isLoggedIn = user != null;
         model.addAttribute("isLoggedIn", isLoggedIn);
         model.addAttribute("title", "Hotel Info");
         model.addAttribute("contentTemplate", "hotel-info");
         // Initialize rooms list to empty when first loading the page
 
-        model.addAttribute("hotels", List.of());
-        model.addAttribute("error", false);
-        model.addAttribute("searchPerformed", false);
-        model.addAttribute("hasHotels", false);
+        // Manually construct SOAP request XML
+        String soapRequest = String.format(
+                "<soapenv:Envelope xmlns:soapenv=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns:web=\"http://foodmenu.io/gt/webservice\">\n" +
+                "   <soapenv:Header>\n" +
+                "       <wsse:Security soapenv:mustUnderstand=\"1\" xmlns:wsse=\"http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-secext-1.0.xsd\" xmlns:wsu=\"http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-utility-1.0.xsd\">\n" +
+                "           <wsse:UsernameToken wsu:Id=\"UsernameToken-90EE12B980F2A1E63C16196236965155\">\n" +
+                "               <wsse:Username>brokerApp</wsse:Username>\n" +
+                "               <wsse:Password Type=\"http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-username-token-profile-1.0#PasswordText\">$2a$10$t39txwmagJ8611gPSQyJxeV5BlH6MQKLzxTRo4uKFDijXup0cUzAG</wsse:Password>\n" +
+                "           </wsse:UsernameToken>\n" +
+                "       </wsse:Security>\n" +
+                "   </soapenv:Header>\n" +
+                "   <soapenv:Body>\n" +
+                "      <web:getHotelRequest>\n" +
+                "         <web:hotelId>%d</web:hotelId>\n" +
+                "      </web:getHotelRequest>\n" +
+                "   </soapenv:Body>\n" +
+                "</soapenv:Envelope>",
+                hotelId
+        );
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.TEXT_XML);
+
+        String hotelSupplierUrl = "http://hotelsupplier.azurewebsites.net:80/ws";
+
+        try {
+            ResponseEntity<String> response = restTemplate.postForEntity(hotelSupplierUrl, new HttpEntity<>(soapRequest, headers), String.class);
+            String responseBody = response.getBody();
+
+            // Parse the SOAP response
+            DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+            factory.setNamespaceAware(true);
+            assert responseBody != null;
+
+            // XPath to find all hotel elements (now using 'ns2' prefix)
+            NodeList hotelNodes = (NodeList) xpath.evaluate("//ns2:hotel", factory.newDocumentBuilder().parse(new InputSource(new StringReader(responseBody))), XPathConstants.NODESET);
+
+            for (int i = 0; i < hotelNodes.getLength(); i++) {
+                org.w3c.dom.Element roomElement = (org.w3c.dom.Element) hotelNodes.item(i);
+                Hotel hotel = new Hotel(
+                        Integer.parseInt(xpath.evaluate("ns2:id", roomElement)),
+                        xpath.evaluate("ns2:name", roomElement),
+                        xpath.evaluate("ns2:address", roomElement),
+                        xpath.evaluate("ns2:city", roomElement),
+                        xpath.evaluate("ns2:country", roomElement),
+                        xpath.evaluate("ns2:phoneNumber", roomElement),
+                        xpath.evaluate("ns2:description", roomElement)
+                );
+                model.addAttribute("hotel", hotel);
+            }
+            model.addAttribute("error", false);
+        } catch (Exception e) {
+            System.err.println("Exception during hotel search: " + e.getMessage());
+            e.printStackTrace(); // Print full stack trace for detailed debugging
+            model.addAttribute("error", "Error searching for hotels: " + e.getMessage());
+            model.addAttribute("hotel", null); // Ensure rooms list is empty on error
+        }
+
+        SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
+
+        // Manually construct SOAP request XML
+        String soapRequest2 = String.format(
+                "<soapenv:Envelope xmlns:soapenv=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns:web=\"http://foodmenu.io/gt/webservice\">\n" +
+                        "   <soapenv:Header>\n" +
+                        "       <wsse:Security soapenv:mustUnderstand=\"1\" xmlns:wsse=\"http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-secext-1.0.xsd\" xmlns:wsu=\"http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-utility-1.0.xsd\">\n" +
+                        "           <wsse:UsernameToken wsu:Id=\"UsernameToken-90EE12B980F2A1E63C16196236965155\">\n" +
+                        "               <wsse:Username>brokerApp</wsse:Username>\n" +
+                        "               <wsse:Password Type=\"http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-username-token-profile-1.0#PasswordText\">$2a$10$t39txwmagJ8611gPSQyJxeV5BlH6MQKLzxTRo4uKFDijXup0cUzAG</wsse:Password>\n" +
+                        "           </wsse:UsernameToken>\n" +
+                        "       </wsse:Security>\n" +
+                        "   </soapenv:Header>\n" +
+                        "   <soapenv:Body>\n" +
+                        "      <web:getFreeRoomsRequest>\n" +
+                        "         <web:startDate>%s</web:startDate>\n" +
+                        "         <web:endDate>%s</web:endDate>\n" +
+                        "         <web:hotelId>%d</web:hotelId>\n" +
+                        "      </web:getFreeRoomsRequest>\n" +
+                        "   </soapenv:Body>\n" +
+                        "</soapenv:Envelope>",
+                dateFormat.format(startDate), dateFormat.format(endDate), hotelId
+        );
+
+        List<Room> filteredRooms = new ArrayList<>();
+        try {
+            ResponseEntity<String> response = restTemplate.postForEntity(hotelSupplierUrl, new HttpEntity<>(soapRequest2, headers), String.class);
+            String responseBody = response.getBody();
+
+            // Parse the SOAP response
+            DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+            factory.setNamespaceAware(true);
+            assert responseBody != null;
+
+            // XPath to find all hotel elements (now using 'ns2' prefix)
+            NodeList roomNodes = (NodeList) xpath.evaluate("//ns2:rooms", factory.newDocumentBuilder().parse(new InputSource(new StringReader(responseBody))), XPathConstants.NODESET);
+
+            for (int i = 0; i < roomNodes.getLength(); i++) {
+                org.w3c.dom.Element roomElement = (org.w3c.dom.Element) roomNodes.item(i);
+                int roomNOfPeople = Integer.parseInt(xpath.evaluate("ns2:nOfPeople", roomElement));
+
+                if (roomNOfPeople >= numberOfPeople) {
+                    filteredRooms.add(new Room(
+                            Integer.parseInt(xpath.evaluate("ns2:roomId", roomElement)),
+                            Integer.parseInt(xpath.evaluate("ns2:number", roomElement)),
+                            roomNOfPeople,
+                            Integer.parseInt(xpath.evaluate("ns2:price", roomElement))
+                    ));
+                }
+            }
+            model.addAttribute("rooms", filteredRooms);
+            model.addAttribute("searchPerformed", true);
+            model.addAttribute("hasRooms", !filteredRooms.isEmpty());
+            model.addAttribute("error", false);
+
+
+        } catch (Exception e) {
+            System.err.println("Exception during room search: " + e.getMessage());
+            e.printStackTrace(); // Print full stack trace for detailed debugging
+            model.addAttribute("error", "Error searching for rooms: " + e.getMessage());
+            model.addAttribute("rooms", List.of()); // Ensure rooms list is empty on error
+            model.addAttribute("searchPerformed", true);
+            model.addAttribute("hasRooms", false);
+        }
+
+        // Retain search parameters for display on the page
+        model.addAttribute("startDate", startDate);
+        model.addAttribute("endDate", endDate);
+        model.addAttribute("numberOfPeople", numberOfPeople);
+
         return "layout";
     }
 

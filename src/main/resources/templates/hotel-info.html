@@ -1,12 +1,29 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org">
 <div th:fragment="content">
+
+    <div th:if="${hotel}" class="hotel-details-card" th:object="${hotel}">
+        <h2 th:text="*{name}">Hotel Name Placeholder</h2>
+        <p class="hotel-location">
+            <span th:text="*{address}">123 Street Name</span>,
+            <span th:text="*{city}">City</span>,
+            <span th:text="*{country}">Country</span>
+        </p>
+        <p class="hotel-phone">
+            Phone: <span th:text="*{phoneNumber}">+1234567890</span>
+        </p>
+        <div class="hotel-description">
+            <h3>About this hotel</h3>
+            <p th:text="*{description}"></p>
+        </div>
+    </div>
+
     <h2>Book a Room</h2>
     <p>Search and reserve available rooms at this Hotel.</p>
 
     <div class="container my-5">
         <h3>Find Available Rooms</h3>
-        <form th:action="@{/hotels}" method="post" class="row g-3 align-items-end">
+        <form th:action="@{/hotel-info/{hotelId}(hotelId=${hotel.id})}" method="post" class="row g-3 align-items-end">
             <div class="col-md-4">
                 <label for="startDate" class="form-label">Start Date:</label>
                 <input type="date" class="form-control" id="startDate" name="startDate" th:value="${#dates.format(startDate, 'yyyy-MM-dd')}" required>
@@ -25,20 +42,26 @@
         </form>
 
         <h4 class="mt-5">Available Rooms:</h4>
-        <div id="hotelSearchResult" class="mt-3">
+        <form th:action="@{/reservation}" method="post" class="mt-3">
             <div th:if="${error}" class="alert alert-danger" role="alert">
                 <p th:text="${error}"></p>
             </div>
+            <ul id="roomsList" class="list-group">
+                <li th:each="room : ${rooms}" class="list-group-item">
+                    <label th:for="${room.id}">
+                        Room Number: <span th:text="${room.number}"></span>,
+                        Capacity: <span th:text="${room.nOfPeople}"></span> people,
+                        Price: <span th:text="${room.price}"></span>€
+                    </label>
+                    <input type="checkbox" th:id="${room.id}" th:name="${room.id}">
 
-            <ul id="hotelsList" class="list-group">
-                <li th:each="hotel : ${hotels}" class="list-group-item">
-                    <span th:text="${hotel.name}"></span>, in
-                    <span th:text="${hotel.city}"></span>, <span th:text="${hotel.country}"></span>
                 </li>
             </ul>
-
-            <p th:if="${searchPerformed and hasHotels and !error}" class="text-muted">No hotels found for the selected criteria.</p>
-        </div>
+            <p th:if="${searchPerformed and !hasRooms and !error}" class="text-muted">No rooms found for the selected criteria.</p>
+            <div class="col-md-2">
+                <button type="submit" class="btn btn-primary w-100">Reserve</button>
+            </div>
+        </form>
     </div>
 </div>
 </html>
