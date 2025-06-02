@@ -81,14 +81,44 @@
 
             <!-- List of available hotels -->
             <ul id="hotelsList" class="list-group">
-                <li th:each="hotel : ${hotels}" class="list-group-item">
-                    <form th:action="@{/hotel-info/{hotelId}(hotelId=${hotel.id})}" method="post">
-                        <button type="submit" class="btn btn-link p-0" style="text-align: left;">
-                            <strong th:text="${hotel.name}"></strong>, in
-                            <span th:text="${hotel.city}"></span>,
-                            <span th:text="${hotel.country}"></span>
-                        </button>
-                    </form>
+<!--                <li th:each="hotel : ${hotels}" class="list-group-item">-->
+<!--                    <form th:action="@{/hotel-info/{hotelId}(hotelId=${hotel.id})}" method="post">-->
+<!--                        <button type="submit" class="btn btn-link p-0" style="text-align: left;">-->
+<!--                            <strong th:text="${hotel.name}"></strong>, in-->
+<!--                            <span th:text="${hotel.city}"></span>,-->
+<!--                            <span th:text="${hotel.country}"></span>-->
+<!--                        </button>-->
+<!--                    </form>-->
+<!--                </li>-->
+                <li th:each="hotel : ${hotels}" class="list-group-item" style="padding: 0; border: none;">
+                    <div style="display: flex; gap: 16px; padding: 16px; border: 1px solid #ccc; border-radius: 12px; margin-bottom: 16px; box-shadow: 0 2px 6px rgba(0,0,0,0.05);">
+
+                        <!-- Left: Hotel Image -->
+                        <div style="flex: 1; min-width: 150px;">
+                            <img src="/static/img/hotelroom.jpg" alt="Hotel image" style="width: 100%; height: 150px; object-fit: cover; border-radius: 8px;">
+                        </div>
+
+                        <!-- Right: Hotel Info -->
+                        <div style="flex: 3; display: flex; flex-direction: column; justify-content: space-between;">
+
+                            <!-- Top Info -->
+                            <div>
+                                <h4 th:text="${hotel.name}" style="margin: 0; font-size: 20px;"></h4>
+                                <p th:text="${hotel.city + ', ' + hotel.country}" style="color: #555; margin: 4px 0;"></p>
+                                <p th:text="${hotel.description}" style="color: #777; font-size: 14px;"></p>
+                            </div>
+
+                            <!-- Bottom Buttons -->
+                            <div style="margin-top: 12px;">
+                                <form th:action="@{/hotel-info/{hotelId}(hotelId=${hotel.id})}" method="post">
+                                    <input type="hidden" name="startDate" th:value="${#dates.format(startDate, 'yyyy-MM-dd')}" />
+                                    <input type="hidden" name="endDate" th:value="${#dates.format(endDate, 'yyyy-MM-dd')}" />
+                                    <input type="hidden" name="numberOfPeople" th:value="${numberOfPeople}" />
+                                    <button type="submit" class="btn btn-primary" style="padding: 8px 16px; font-size: 14px;">View Details</button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
                 </li>
             </ul>
 
