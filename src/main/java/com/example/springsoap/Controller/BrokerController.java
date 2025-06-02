@@ -1,8 +1,12 @@
 package com.example.springsoap.Controller;
 
+import com.example.springsoap.Model.Airline;
 import com.example.springsoap.Model.Hotel;
 import com.example.springsoap.Model.Room;
 import com.example.springsoap.UserService;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpEntity;
@@ -28,11 +32,22 @@ import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.xpath.XPath;
 import javax.xml.xpath.XPathConstants;
 import javax.xml.xpath.XPathFactory;
+import java.io.IOException;
 import java.io.StringReader;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
 import java.text.SimpleDateFormat;
+import java.time.Duration;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import java.util.Map;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 
 @Controller
 public class BrokerController {
@@ -77,14 +92,131 @@ public class BrokerController {
     }
 
     @GetMapping("/flights")
-    public String flights(@AuthenticationPrincipal OidcUser user, Model model) {
+    public String flights(@AuthenticationPrincipal OidcUser user, Model model) throws URISyntaxException, IOException, InterruptedException {
+        // When we enter flights currently we can see all the flights
         boolean isLoggedIn = user != null;
+        HttpRequest request = HttpRequest.newBuilder()
+                .uri(new URI("http://localhost:8081/flights"))
+                .GET()
+                .build();
+        System.out.println(request.headers()); // this is the header of the request
+        HttpClient client = HttpClient.newHttpClient();
+        HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+        System.out.println(response.headers());
+        System.out.println(response.body());
+        String json = response.body();
+
+
+        ObjectMapper mapper = new ObjectMapper();
+
+        JsonNode jsonArray = mapper.readTree(json);
+        // Map<String, String> flights = new HashMap<>(3);
+        ArrayList<String> flights = new ArrayList<>();
+
+        for (JsonNode item : jsonArray) {
+            String source = item.get("source").asText();
+            String destination = item.get("destination").asText();
+            String departureTime = item.get("departureTime").asText();
+            String arrivalTime = item.get("arrivalTime").asText();
+
+            Instant departure = Instant.parse(departureTime);
+            Instant arrival = Instant.parse(arrivalTime);
+
+            long durationMinutes = Duration.between(departure, arrival).toMinutes();
+            long hours = durationMinutes/60;
+
+            String sd = source + " --------→ "  + hours + " hours --------→ "+ destination;
+
+            flights.add(sd);
+
+            System.out.println("Processing: " + sd);
+        }
+
+        System.out.println(flights);
+
         model.addAttribute("title", "Flights");
-        model.addAttribute("flights", List.of("BRU → NYC", "BRU → TOKYO"));
+        model.addAttribute("flights", flights);
         model.addAttribute("isLoggedIn", isLoggedIn);
         model.addAttribute("contentTemplate", "flights");
         return "layout";
     }
+
+
+    @PostMapping("/flights")
+    public String searchFlights(@AuthenticationPrincipal OidcUser user,
+                                @RequestParam("departure_time") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) Date departureDate,
+                                @RequestParam("source") String source,
+                                @RequestParam("destination") String destination,
+                                Model model) throws IOException, InterruptedException, URISyntaxException {
+
+        boolean isLoggedIn = user != null;
+
+        // Convert the departure date to ISO format: yyyy-MM-dd
+        String dateStr = new SimpleDateFormat("yyyy-MM-dd").format(departureDate);
+
+        // Encode parameters
+        String encodedSource = URLEncoder.encode(source, StandardCharsets.UTF_8);
+        String encodedDestination = URLEncoder.encode(destination, StandardCharsets.UTF_8);
+        String encodedDate = URLEncoder.encode(dateStr, StandardCharsets.UTF_8);
+
+        // Construct the final URI with encoded parameters
+        String uri = "http://localhost:8081/flights/searchByDateAndRoute?source=" + encodedSource +
+                "&destination=" + encodedDestination + "&departureDate=" + encodedDate;
+
+        HttpRequest request = HttpRequest.newBuilder()
+                .uri(new URI(uri))
+                .GET()
+                .build();
+
+        HttpClient client = HttpClient.newHttpClient();
+        HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+
+        // Process response and update model...
+        ObjectMapper mapper = new ObjectMapper();
+        JsonNode jsonArray = mapper.readTree(response.body());
+
+        ArrayList<String> flights = new ArrayList<>();
+        for (JsonNode item : jsonArray) {
+            String s = item.get("source").asText();
+            String d = item.get("destination").asText();
+            flights.add(s + " → " + d);
+        }
+
+        model.addAttribute("isLoggedIn", isLoggedIn);
+        model.addAttribute("flights", flights);
+
+        return "layout";
+    }
+
+
+    @GetMapping("/flight-info/{id}")
+    public String flightDetails(@PathVariable Long id, Model model) throws IOException, InterruptedException, URISyntaxException {
+        HttpRequest request = HttpRequest.newBuilder()
+                .uri(new URI("http://localhost:8081/flights/" + id))
+                .GET()
+                .build();
+
+        HttpClient client = HttpClient.newHttpClient();
+        HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+
+        ObjectMapper mapper = new ObjectMapper();
+        Airline flight = mapper.readValue(response.body(), Airline.class);
+        model.addAttribute("flight", flight);
+        return "flight-info";
+    }
+
+
+
+
+
+
+
+
+
+
+
+
+
 
     @GetMapping("/hotels")
     public String hotels(@AuthenticationPrincipal OidcUser user, Model model) {
