@@ -2,68 +2,34 @@
 <html xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8" />
-    <title>Flight Details</title>
-    <style>
-        body {
-            font-family: sans-serif;
-            margin: 0;
-            padding: 2rem;
-        }
-        h1 { color: #333; }
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 1rem;
-        }
-        th, td {
-            border: 1px solid #aaa;
-            padding: 0.5rem;
-            text-align: left;
-        }
-    </style>
+    <title>Flight Info</title>
 </head>
 <body>
-<h1>Flight Details</h1>
-
-<table>
-    <tr>
-        <th>Flight Number</th>
-        <td th:text="${flight.flightNumber}">N/A</td>
-    </tr>
-    <tr>
-        <th>Plane Model</th>
-        <td th:text="${flight.planeModel}">N/A</td>
-    </tr>
-    <tr>
-        <th>Source</th>
-        <td th:text="${flight.source}">N/A</td>
-    </tr>
-    <tr>
-        <th>Destination</th>
-        <td th:text="${flight.destination}">N/A</td>
-    </tr>
-    <tr>
-        <th>Departure Time</th>
-        <td th:text="${flight.departureTime}">N/A</td>
-    </tr>
-    <tr>
-        <th>Arrival Time</th>
-        <td th:text="${flight.arrivalTime}">N/A</td>
-    </tr>
-    <tr>
-        <th>Price Economy</th>
-        <td th:text="${flight.priceEconomy}">N/A</td>
-    </tr>
-    <tr>
-        <th>Price Business</th>
-        <td th:text="${flight.priceBusiness}">N/A</td>
-    </tr>
-    <tr>
-        <th>Price First</th>
-        <td th:text="${flight.priceFirst}">N/A</td>
-    </tr>
-</table>
-
-<p><a th:href="@{/flights}">Back to Flights</a></p>
+<div th:fragment="content">
+    <h1>Flight Info</h1>
+    <table>
+        <tr>
+            <th>Flight Number</th>
+            <td th:text="${flight.flightNumber}">N/A</td>
+        </tr>
+        <tr>
+            <th>Source</th>
+            <td th:text="${flight.source}">N/A</td>
+        </tr>
+        <tr>
+            <th>Destination</th>
+            <td th:text="${flight.destination}">N/A</td>
+        </tr>
+        <tr>
+            <th>Departure Time</th>
+            <td th:text="${flight.departureTime}">N/A</td>
+        </tr>
+        <tr>
+            <th>Arrival Time</th>
+            <td th:text="${flight.arrivalTime}">N/A</td>
+        </tr>
+    </table>
+    <p><a th:href="@{/flights}">Back to Flights</a></p>
+</div>
 </body>
 </html>
