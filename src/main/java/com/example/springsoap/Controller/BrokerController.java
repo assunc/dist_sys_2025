@@ -103,7 +103,6 @@ public class BrokerController {
 
         ObjectMapper mapper = new ObjectMapper();
 
-        // Deserialize response into a list of Airline DTOs
         List<Airline> flights = mapper.readValue(json, new TypeReference<List<Airline>>() {});
 
         model.addAttribute("title", "Flights");
