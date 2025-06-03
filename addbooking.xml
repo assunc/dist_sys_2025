@@ -12,9 +12,16 @@
     </soapenv:Header>
     <soapenv:Body>
         <gs:addBookingRequest>
-            <gs:roomNumber>102</gs:roomNumber>
-            <gs:startDate>2025-05-11</gs:startDate>
-            <gs:endDate>2025-05-12</gs:endDate>
+            <gs:booking>
+                <gs:roomId>2</gs:roomId>
+                <gs:startDate>2025-04-11</gs:startDate>
+                <gs:endDate>2025-04-12</gs:endDate>
+            </gs:booking>
+            <gs:booking>
+                <gs:roomId>1</gs:roomId>
+                <gs:startDate>2025-04-11</gs:startDate>
+                <gs:endDate>2025-04-12</gs:endDate>
+            </gs:booking>
         </gs:addBookingRequest>
     </soapenv:Body>
 </soapenv:Envelope>

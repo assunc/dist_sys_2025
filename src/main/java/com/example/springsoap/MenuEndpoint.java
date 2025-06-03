@@ -129,11 +129,11 @@ public class MenuEndpoint {
     @ResponsePayload
     public AddBookingResponse addBooking(@RequestPayload AddBookingRequest request) {
         AddBookingResponse response = new AddBookingResponse();
-        for (int roomId : request.getRoomId()) {
-            Booking booking = hotelServices.addBooking(roomId, request.getStartDate(), request.getEndDate());
+        for (BookingRequest bookingRequest : request.getBooking()) {
+            Booking booking = hotelServices.addBooking(bookingRequest.getRoomId(), bookingRequest.getStartDate(), bookingRequest.getEndDate());
             if (booking != null) {
                 response.getBookingId().add(booking.getId());
-                response.getStatus().add(BookingStatus.fromValue(booking.getStatus()));
+                response.getStatus().add(BookingStatus.fromValue(booking.getStatus().toLowerCase()));
             } else {
                 response.getBookingId().add(-1);
                 response.getStatus().add(BookingStatus.NOT_AVAILABLE);

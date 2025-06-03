@@ -46,7 +46,7 @@ public class HotelServices {
             booking.setRoomId(room.getId());
             booking.setStartDate(XMLGCtoLocalDate(startDate));
             booking.setEndDate(XMLGCtoLocalDate(endDate));
-            booking.setStatus(BookingStatus.PENDING.toString());
+            booking.setStatus(String.valueOf(BookingStatus.PENDING));
             bookingRepository.save(booking);
             return booking;
         }

@@ -71,9 +71,7 @@
     <xs:element name="addBookingRequest">
         <xs:complexType>
             <xs:sequence>
-                <xs:element name="roomId" type="xs:int" maxOccurs="unbounded"/>
-                <xs:element name="startDate" type="xs:date"/>
-                <xs:element name="endDate" type="xs:date"/>
+                <xs:element name="booking" type="tns:bookingRequest" maxOccurs="unbounded"/>
             </xs:sequence>
         </xs:complexType>
     </xs:element>
@@ -126,6 +124,14 @@
             <xs:element name="number" type="xs:int"/>
             <xs:element name="nOfPeople" type="xs:int"/>
             <xs:element name="price" type="xs:int"/>
+        </xs:sequence>
+    </xs:complexType>
+
+    <xs:complexType name="bookingRequest">
+        <xs:sequence>
+            <xs:element name="roomId" type="xs:int"/>
+            <xs:element name="startDate" type="xs:date"/>
+            <xs:element name="endDate" type="xs:date"/>
         </xs:sequence>
     </xs:complexType>
 
