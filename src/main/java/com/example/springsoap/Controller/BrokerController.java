@@ -36,7 +36,6 @@ import java.util.Date;
 import java.util.List;
 import java.util.Map;
 
-
 @Controller
 //@RequestMapping("/scopedproxy")
 public class BrokerController {
@@ -45,6 +44,18 @@ public class BrokerController {
     private final XPath xpath;
 
     private Reservation reservation;
+
+    String soapRequestHead = """
+       <soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" xmlns:web="http://foodmenu.io/gt/webservice">
+           <soapenv:Header>
+               <wsse:Security soapenv:mustUnderstand="1" xmlns:wsse="http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-secext-1.0.xsd" xmlns:wsu="http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-utility-1.0.xsd">
+                   <wsse:UsernameToken wsu:Id="UsernameToken-90EE12B980F2A1E63C16196236965155">
+                       <wsse:Username>brokerApp</wsse:Username>
+                       <wsse:Password Type="http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-username-token-profile-1.0#PasswordText">$2a$10$t39txwmagJ8611gPSQyJxeV5BlH6MQKLzxTRo4uKFDijXup0cUzAG</wsse:Password>
+                   </wsse:UsernameToken>
+               </wsse:Security>
+           </soapenv:Header>
+       """;
 
     @Autowired
     public BrokerController(UserService userService, RestTemplate restTemplate, Reservation reservation) {
@@ -124,23 +135,14 @@ public class BrokerController {
         SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
 
         // Manually construct SOAP request XML
-        String soapRequest = String.format(
-                "<soapenv:Envelope xmlns:soapenv=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns:web=\"http://foodmenu.io/gt/webservice\">\n" +
-                "   <soapenv:Header>\n" +
-                "       <wsse:Security soapenv:mustUnderstand=\"1\" xmlns:wsse=\"http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-secext-1.0.xsd\" xmlns:wsu=\"http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-utility-1.0.xsd\">\n" +
-                "           <wsse:UsernameToken wsu:Id=\"UsernameToken-90EE12B980F2A1E63C16196236965155\">\n" +
-                "               <wsse:Username>brokerApp</wsse:Username>\n" +
-                "               <wsse:Password Type=\"http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-username-token-profile-1.0#PasswordText\">$2a$10$t39txwmagJ8611gPSQyJxeV5BlH6MQKLzxTRo4uKFDijXup0cUzAG</wsse:Password>\n" +
-                "           </wsse:UsernameToken>\n" +
-                "       </wsse:Security>\n" +
-                "   </soapenv:Header>\n" +
-                "   <soapenv:Body>\n" +
-                "      <web:getFreeHotelsRequest>\n" +
-                "         <web:startDate>%s</web:startDate>\n" +
-                "         <web:endDate>%s</web:endDate>\n" +
-                "      </web:getFreeHotelsRequest>\n" +
-                "   </soapenv:Body>\n" +
-                "</soapenv:Envelope>",
+        String soapRequest = soapRequestHead + String.format("""
+                   <soapenv:Body>
+                      <web:getFreeHotelsRequest>
+                         <web:startDate>%s</web:startDate>
+                         <web:endDate>%s</web:endDate>
+                      </web:getFreeHotelsRequest>
+                   </soapenv:Body>
+                </soapenv:Envelope>""",
                 dateFormat.format(startDate), dateFormat.format(endDate)
         );
 
@@ -212,22 +214,13 @@ public class BrokerController {
         // Initialize rooms list to empty when first loading the page
 
         // Manually construct SOAP request XML
-        String soapRequest = String.format(
-                "<soapenv:Envelope xmlns:soapenv=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns:web=\"http://foodmenu.io/gt/webservice\">\n" +
-                "   <soapenv:Header>\n" +
-                "       <wsse:Security soapenv:mustUnderstand=\"1\" xmlns:wsse=\"http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-secext-1.0.xsd\" xmlns:wsu=\"http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-utility-1.0.xsd\">\n" +
-                "           <wsse:UsernameToken wsu:Id=\"UsernameToken-90EE12B980F2A1E63C16196236965155\">\n" +
-                "               <wsse:Username>brokerApp</wsse:Username>\n" +
-                "               <wsse:Password Type=\"http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-username-token-profile-1.0#PasswordText\">$2a$10$t39txwmagJ8611gPSQyJxeV5BlH6MQKLzxTRo4uKFDijXup0cUzAG</wsse:Password>\n" +
-                "           </wsse:UsernameToken>\n" +
-                "       </wsse:Security>\n" +
-                "   </soapenv:Header>\n" +
-                "   <soapenv:Body>\n" +
-                "      <web:getHotelRequest>\n" +
-                "         <web:hotelId>%d</web:hotelId>\n" +
-                "      </web:getHotelRequest>\n" +
-                "   </soapenv:Body>\n" +
-                "</soapenv:Envelope>",
+        String soapRequest = soapRequestHead + String.format("""
+                   <soapenv:Body>
+                      <web:getHotelRequest>
+                         <web:hotelId>%d</web:hotelId>
+                      </web:getHotelRequest>
+                   </soapenv:Body>
+                </soapenv:Envelope>""",
                 hotelId
         );
 
@@ -272,24 +265,15 @@ public class BrokerController {
         SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
 
         // Manually construct SOAP request XML
-        String soapRequest2 = String.format(
-                "<soapenv:Envelope xmlns:soapenv=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns:web=\"http://foodmenu.io/gt/webservice\">\n" +
-                        "   <soapenv:Header>\n" +
-                        "       <wsse:Security soapenv:mustUnderstand=\"1\" xmlns:wsse=\"http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-secext-1.0.xsd\" xmlns:wsu=\"http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-utility-1.0.xsd\">\n" +
-                        "           <wsse:UsernameToken wsu:Id=\"UsernameToken-90EE12B980F2A1E63C16196236965155\">\n" +
-                        "               <wsse:Username>brokerApp</wsse:Username>\n" +
-                        "               <wsse:Password Type=\"http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-username-token-profile-1.0#PasswordText\">$2a$10$t39txwmagJ8611gPSQyJxeV5BlH6MQKLzxTRo4uKFDijXup0cUzAG</wsse:Password>\n" +
-                        "           </wsse:UsernameToken>\n" +
-                        "       </wsse:Security>\n" +
-                        "   </soapenv:Header>\n" +
-                        "   <soapenv:Body>\n" +
-                        "      <web:getFreeRoomsRequest>\n" +
-                        "         <web:startDate>%s</web:startDate>\n" +
-                        "         <web:endDate>%s</web:endDate>\n" +
-                        "         <web:hotelId>%d</web:hotelId>\n" +
-                        "      </web:getFreeRoomsRequest>\n" +
-                        "   </soapenv:Body>\n" +
-                        "</soapenv:Envelope>",
+        String soapRequest2 = soapRequestHead + String.format("""
+                   <soapenv:Body>
+                      <web:getFreeRoomsRequest>
+                         <web:startDate>%s</web:startDate>
+                         <web:endDate>%s</web:endDate>
+                         <web:hotelId>%d</web:hotelId>
+                      </web:getFreeRoomsRequest>
+                   </soapenv:Body>
+                </soapenv:Envelope>""",
                 dateFormat.format(startDate), dateFormat.format(endDate), hotelId
         );
 
@@ -407,6 +391,71 @@ public class BrokerController {
         model.addAttribute("title", "Process Reservation");
         model.addAttribute("contentTemplate", "combo");
 
+        // Manually construct SOAP request XML
+        String soapRequest = soapRequestHead +"""
+                <soapenv:Body>
+                    <gs:addBookingRequest>""";
+        for (RoomReservation roomReservation : reservation.getRoomReservations()) {
+            soapRequest += String.format("""
+                   <gs:booking>
+                       <gs:roomId>%d</gs:roomId>
+                       <gs:startDate>%s</gs:startDate>
+                       <gs:endDate>%s</gs:endDate>
+                   </gs:booking>""",
+                    roomReservation.getRoom().getId(), roomReservation.getStartDate(), roomReservation.getEndDate()
+            );
+        }
+        soapRequest += """
+                   </gs:addBookingRequest>
+                   </soapenv:Body>
+                </soapenv:Envelope>""";
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.TEXT_XML);
+
+        List<Hotel> freeHotels = new ArrayList<>();
+        String hotelSupplierUrl = "http://hotelsupplier.azurewebsites.net:80/ws";
+
+        try {
+            ResponseEntity<String> response = restTemplate.postForEntity(hotelSupplierUrl, new HttpEntity<>(soapRequest, headers), String.class);
+            String responseBody = response.getBody();
+            assert responseBody != null;
+
+            DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+            factory.setNamespaceAware(true);
+            Document doc = factory.newDocumentBuilder().parse(new InputSource(new StringReader(responseBody)));
+            doc.getDocumentElement().normalize(); // Normalize the document for consistent parsing
+
+            NodeList bookingIdNodes = doc.getElementsByTagName("bookingId");
+            NodeList statusNodes = doc.getElementsByTagName("status");
+
+//            for (int i = 0; i < bookingIdNodes.getLength(); i++) {
+//                org.w3c.dom.Element roomElement = (org.w3c.dom.Element) hotelNodes.item(i);
+//                String city = xpath.evaluate("ns2:city", roomElement);
+//                String country = xpath.evaluate("ns2:country", roomElement);
+//                freeHotels.add(new Hotel(
+//                        Integer.parseInt(xpath.evaluate("ns2:id", roomElement)),
+//                        xpath.evaluate("ns2:name", roomElement),
+//                        xpath.evaluate("ns2:address", roomElement),
+//                        city,
+//                        country,
+//                        xpath.evaluate("ns2:phoneNumber", roomElement),
+//                        xpath.evaluate("ns2:description", roomElement)
+//                ));
+//            }
+            model.addAttribute("hotels", freeHotels);
+            model.addAttribute("searchPerformed", true);
+            model.addAttribute("hasHotels", !freeHotels.isEmpty());
+            model.addAttribute("error", false);
+
+        } catch (Exception e) {
+            System.err.println("Exception during hotel search: " + e.getMessage());
+            e.printStackTrace(); // Print full stack trace for detailed debugging
+            model.addAttribute("error", "Error searching for hotels: " + e.getMessage());
+            model.addAttribute("hotels", List.of()); // Ensure rooms list is empty on error
+            model.addAttribute("searchPerformed", true);
+            model.addAttribute("hasHotels", false);
+        }
 
 
         return "layout";
