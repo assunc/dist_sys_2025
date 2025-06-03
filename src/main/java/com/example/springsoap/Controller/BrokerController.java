@@ -42,10 +42,7 @@ import java.net.http.HttpResponse;
 import java.text.SimpleDateFormat;
 import java.time.Duration;
 import java.time.Instant;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 
@@ -93,46 +90,21 @@ public class BrokerController {
 
     @GetMapping("/flights")
     public String flights(@AuthenticationPrincipal OidcUser user, Model model) throws URISyntaxException, IOException, InterruptedException {
-        // When we enter flights currently we can see all the flights
         boolean isLoggedIn = user != null;
+
         HttpRequest request = HttpRequest.newBuilder()
                 .uri(new URI("http://localhost:8081/flights"))
                 .GET()
                 .build();
-        System.out.println(request.headers()); // this is the header of the request
+
         HttpClient client = HttpClient.newHttpClient();
         HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
-        System.out.println(response.headers());
-        System.out.println(response.body());
         String json = response.body();
-
 
         ObjectMapper mapper = new ObjectMapper();
 
-        JsonNode jsonArray = mapper.readTree(json);
-        // Map<String, String> flights = new HashMap<>(3);
-        ArrayList<String> flights = new ArrayList<>();
-
-        for (JsonNode item : jsonArray) {
-            String source = item.get("source").asText();
-            String destination = item.get("destination").asText();
-            String departureTime = item.get("departureTime").asText();
-            String arrivalTime = item.get("arrivalTime").asText();
-
-            Instant departure = Instant.parse(departureTime);
-            Instant arrival = Instant.parse(arrivalTime);
-
-            long durationMinutes = Duration.between(departure, arrival).toMinutes();
-            long hours = durationMinutes/60;
-
-            String sd = source + " --------→ "  + hours + " hours --------→ "+ destination;
-
-            flights.add(sd);
-
-            System.out.println("Processing: " + sd);
-        }
-
-        System.out.println(flights);
+        // Deserialize response into a list of Airline DTOs
+        List<Airline> flights = mapper.readValue(json, new TypeReference<List<Airline>>() {});
 
         model.addAttribute("title", "Flights");
         model.addAttribute("flights", flights);
@@ -140,6 +112,7 @@ public class BrokerController {
         model.addAttribute("contentTemplate", "flights");
         return "layout";
     }
+
 
 
     @PostMapping("/flights")
@@ -151,15 +124,12 @@ public class BrokerController {
 
         boolean isLoggedIn = user != null;
 
-        // Convert the departure date to ISO format: yyyy-MM-dd
         String dateStr = new SimpleDateFormat("yyyy-MM-dd").format(departureDate);
 
-        // Encode parameters
         String encodedSource = URLEncoder.encode(source, StandardCharsets.UTF_8);
         String encodedDestination = URLEncoder.encode(destination, StandardCharsets.UTF_8);
         String encodedDate = URLEncoder.encode(dateStr, StandardCharsets.UTF_8);
 
-        // Construct the final URI with encoded parameters
         String uri = "http://localhost:8081/flights/searchByDateAndRoute?source=" + encodedSource +
                 "&destination=" + encodedDestination + "&departureDate=" + encodedDate;
 
@@ -171,22 +141,19 @@ public class BrokerController {
         HttpClient client = HttpClient.newHttpClient();
         HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
 
-        // Process response and update model...
         ObjectMapper mapper = new ObjectMapper();
-        JsonNode jsonArray = mapper.readTree(response.body());
-
-        ArrayList<String> flights = new ArrayList<>();
-        for (JsonNode item : jsonArray) {
-            String s = item.get("source").asText();
-            String d = item.get("destination").asText();
-            flights.add(s + " → " + d);
-        }
+        List<Airline> flights = mapper.readValue(response.body(),
+                new TypeReference<List<Airline>>() {});
 
         model.addAttribute("isLoggedIn", isLoggedIn);
         model.addAttribute("flights", flights);
+        model.addAttribute("contentTemplate", "flights"); // 👈 Fix added!
 
         return "layout";
     }
+
+
+
 
 
     @GetMapping("/flight-info/{id}")
