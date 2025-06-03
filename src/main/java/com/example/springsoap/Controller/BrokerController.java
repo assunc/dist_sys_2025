@@ -1,7 +1,9 @@
 package com.example.springsoap.Controller;
 
 import com.example.springsoap.Model.Hotel;
+import com.example.springsoap.Model.Reservation;
 import com.example.springsoap.Model.Room;
+import com.example.springsoap.Model.RoomReservation;
 import com.example.springsoap.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.format.annotation.DateTimeFormat;
@@ -9,14 +11,11 @@ import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.*;
 import org.springframework.security.oauth2.core.oidc.user.OidcUser;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.client.RestTemplate;
 import org.apache.commons.lang3.StringUtils;
 
@@ -30,21 +29,28 @@ import javax.xml.xpath.XPath;
 import javax.xml.xpath.XPathConstants;
 import javax.xml.xpath.XPathFactory;
 import java.io.StringReader;
+import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import java.util.Map;
+
 
 @Controller
+//@RequestMapping("/scopedproxy")
 public class BrokerController {
     private final UserService userService;
     private final RestTemplate restTemplate;
     private final XPath xpath;
 
+    private Reservation reservation;
+
     @Autowired
-    public BrokerController(UserService userService, RestTemplate restTemplate) {
+    public BrokerController(UserService userService, RestTemplate restTemplate, Reservation reservation) {
         this.userService = userService;
         this.restTemplate = restTemplate;
+        this.reservation = reservation;
         xpath = XPathFactory.newInstance().newXPath();
         // Register a custom NamespaceContext to handle "ns2" and other namespaces
         xpath.setNamespaceContext(new javax.xml.namespace.NamespaceContext() {
@@ -332,6 +338,76 @@ public class BrokerController {
         model.addAttribute("startDate", startDate);
         model.addAttribute("endDate", endDate);
         model.addAttribute("numberOfPeople", numberOfPeople);
+
+        return "layout";
+    }
+
+    @PostMapping("/payment")
+    public String payment(@RequestParam Map<String, String> allRequestParams, @AuthenticationPrincipal OidcUser user, Model model) {
+        boolean isLoggedIn = user != null;
+        model.addAttribute("isLoggedIn", isLoggedIn);
+        model.addAttribute("title", "Payment Information");
+        model.addAttribute("contentTemplate", "payment");
+
+        SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
+        Date startDate, endDate;
+        try {
+            startDate = dateFormat.parse(allRequestParams.get("startDate"));
+            endDate = dateFormat.parse(allRequestParams.get("endDate"));
+        } catch (ParseException e) {
+            throw new RuntimeException(e);
+        }
+        // Iterate through all request parameters to find selected room checkboxes
+        // And the value is "on" when checked.
+        for (Map.Entry<String, String> entry : allRequestParams.entrySet()) {
+            if (entry.getKey().startsWith("Room") && entry.getValue().equals("on")) {
+                reservation.addRoomReservation(new RoomReservation(
+                        new Room(entry.getKey()),
+                        allRequestParams.get("name"),
+                        startDate, endDate
+                ));
+            }
+        }
+        model.addAttribute("reservation", reservation);
+
+        // --- Autofill Logic ---
+        String userAddress = null;
+        String userCity = null;
+        String userPostalCode = null;
+        String userCountry = null;
+        if (isLoggedIn) {
+            userAddress = "Rue du Marché aux Herbes 10";
+            userCity = "Leuven";
+            userPostalCode = "3000";
+            userCountry = "Belgium";
+        }
+        model.addAttribute("userAddress", userAddress);
+        model.addAttribute("userCity", userCity);
+        model.addAttribute("userPostalCode", userPostalCode);
+        model.addAttribute("userCountry", userCountry);
+
+        return "layout";
+    }
+
+    @PostMapping("/process-reservation")
+    public String processReservation(
+            @RequestParam("cardNumber") String cardNumber,
+            @RequestParam("expirationMonth") int expirationMonth,
+            @RequestParam("expirationYear") int expirationYear,
+            @RequestParam("cvc") String cvc,
+            @RequestParam("billingStreet") String billingStreet,
+            @RequestParam("billingCity") String billingCity,
+            @RequestParam("billingPostalCode") String billingPostalCode,
+            @RequestParam("billingCountry") String billingCountry,
+            @AuthenticationPrincipal OidcUser user,
+            Model model
+    ) {
+        boolean isLoggedIn = user != null;
+        model.addAttribute("isLoggedIn", isLoggedIn);
+        model.addAttribute("title", "Process Reservation");
+        model.addAttribute("contentTemplate", "combo");
+
+
 
         return "layout";
     }

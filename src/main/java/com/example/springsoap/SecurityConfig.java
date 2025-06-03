@@ -5,6 +5,7 @@ import jakarta.servlet.http.HttpSession;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Scope;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
@@ -19,12 +20,22 @@ import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.logout.LogoutSuccessHandler;
 import org.springframework.web.util.UriComponentsBuilder;
 import org.springframework.web.client.RestTemplate;
+import org.springframework.web.context.WebApplicationContext;
+import org.springframework.context.annotation.ScopedProxyMode;
+import com.example.springsoap.Model.Reservation;
+
 
 import java.util.*;
 
 @Configuration
 @EnableMethodSecurity
 public class SecurityConfig {
+
+    @Bean
+    @Scope(value = WebApplicationContext.SCOPE_SESSION, proxyMode = ScopedProxyMode.TARGET_CLASS)
+    public Reservation reservations() {
+        return new Reservation();
+    }
 
     @Bean
     public RestTemplate restTemplate() {
