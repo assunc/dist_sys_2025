@@ -18,6 +18,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.client.RestTemplate;
+import org.apache.commons.lang3.StringUtils;
 
 import org.w3c.dom.Document;
 import org.w3c.dom.NodeList;
@@ -102,6 +103,7 @@ public class BrokerController {
 
     @PostMapping("/hotels")
     public String searchHotels(
+            @RequestParam("destination") String destination,
             @RequestParam("startDate") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) Date startDate,
             @RequestParam("endDate") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) Date endDate,
             @RequestParam("numberOfPeople") int numberOfPeople,
@@ -154,15 +156,19 @@ public class BrokerController {
 
             for (int i = 0; i < hotelNodes.getLength(); i++) {
                 org.w3c.dom.Element roomElement = (org.w3c.dom.Element) hotelNodes.item(i);
-                freeHotels.add(new Hotel(
-                        Integer.parseInt(xpath.evaluate("ns2:id", roomElement)),
-                        xpath.evaluate("ns2:name", roomElement),
-                        xpath.evaluate("ns2:address", roomElement),
-                        xpath.evaluate("ns2:city", roomElement),
-                        xpath.evaluate("ns2:country", roomElement),
-                        xpath.evaluate("ns2:phoneNumber", roomElement),
-                        xpath.evaluate("ns2:description", roomElement)
-                ));
+                String city = xpath.evaluate("ns2:city", roomElement);
+                String country = xpath.evaluate("ns2:country", roomElement);
+                if (destination.isEmpty() || StringUtils.containsIgnoreCase(city, destination) || StringUtils.containsIgnoreCase(country, destination)) {
+                    freeHotels.add(new Hotel(
+                            Integer.parseInt(xpath.evaluate("ns2:id", roomElement)),
+                            xpath.evaluate("ns2:name", roomElement),
+                            xpath.evaluate("ns2:address", roomElement),
+                            city,
+                            country,
+                            xpath.evaluate("ns2:phoneNumber", roomElement),
+                            xpath.evaluate("ns2:description", roomElement)
+                    ));
+                }
             }
             model.addAttribute("hotels", freeHotels);
             model.addAttribute("searchPerformed", true);
