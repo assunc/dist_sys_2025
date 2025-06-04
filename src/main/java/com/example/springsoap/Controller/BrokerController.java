@@ -4,6 +4,16 @@ import com.example.springsoap.Model.Hotel;
 import com.example.springsoap.Model.Reservation;
 import com.example.springsoap.Model.Room;
 import com.example.springsoap.Model.RoomReservation;
+import com.example.springsoap.Entities.Order;
+import com.example.springsoap.Entities.HotelOrder;
+import com.example.springsoap.Entities.FlightOrder;
+import com.example.springsoap.Entities.AirlineSupplier;
+import com.example.springsoap.Entities.HotelSupplier;
+import com.example.springsoap.Repository.AirlineSupplierRepository;
+import com.example.springsoap.Repository.HotelSupplierRepository;
+import com.example.springsoap.Repository.HotelOrderRepository;
+import com.example.springsoap.Repository.FlightOrderRepository;
+import com.example.springsoap.Repository.OrderRepository;
 import com.example.springsoap.UserService;
 import jakarta.xml.bind.SchemaOutputResolver;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -32,6 +42,8 @@ import javax.xml.xpath.XPathFactory;
 import java.io.StringReader;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
@@ -43,8 +55,13 @@ public class BrokerController {
     private final UserService userService;
     private final RestTemplate restTemplate;
     private final XPath xpath;
+    private final HotelSupplierRepository hotelSupplierRepository;
+    private final AirlineSupplierRepository airlineSupplierRepository;
+    private final HotelOrderRepository hotelOrderRepository;
+    private final FlightOrderRepository flightOrderRepository;
+    private final OrderRepository orderRepository;
 
-    private Reservation reservation;
+    private final Reservation reservation;
 
     String hotelSupplierUrl = "http://hotelsupplier.azurewebsites.net:80/ws";
     String hotelSupplierNamespaceURI = "http://foodmenu.io/gt/webservice";
@@ -63,10 +80,24 @@ public class BrokerController {
     DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
 
     @Autowired
-    public BrokerController(UserService userService, RestTemplate restTemplate, Reservation reservation) {
+    public BrokerController(
+            UserService userService,
+            RestTemplate restTemplate,
+            Reservation reservation,
+            HotelSupplierRepository hotelSupplierRepository,
+            AirlineSupplierRepository airlineSupplierRepository,
+            HotelOrderRepository hotelOrderRepository,
+            FlightOrderRepository flightOrderRepository,
+            OrderRepository orderRepository
+    ) {
         this.userService = userService;
         this.restTemplate = restTemplate;
         this.reservation = reservation;
+        this.hotelSupplierRepository = hotelSupplierRepository;
+        this.airlineSupplierRepository = airlineSupplierRepository;
+        this.hotelOrderRepository = hotelOrderRepository;
+        this.flightOrderRepository = flightOrderRepository;
+        this.orderRepository = orderRepository;
         xpath = XPathFactory.newInstance().newXPath();
         // Register a custom NamespaceContext to handle "ns2" and other namespaces
         xpath.setNamespaceContext(new javax.xml.namespace.NamespaceContext() {
@@ -384,9 +415,19 @@ public class BrokerController {
         boolean isLoggedIn = user != null;
         model.addAttribute("isLoggedIn", isLoggedIn);
         model.addAttribute("title", "Process Reservation");
-        model.addAttribute("contentTemplate", "combo");
+        model.addAttribute("contentTemplate", "confirmation");
 
         SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
+
+        Order newOrder = new Order(
+                isLoggedIn ? userService.findOrCreateFromOidcUser(user) : null,
+                billingStreet + ", " + billingCity + ", " + billingPostalCode + ", " + billingCountry,
+                cardNumber + ", " + expirationMonth + "/" + expirationYear + ", " + cvc,
+                "pending"
+        );
+
+        List<HotelOrder> hotelOrders = new ArrayList<>();
+        List<FlightOrder> flightOrders = new ArrayList<>();
 
         // Two stage commit
         boolean allBookingsPending = true;
@@ -438,7 +479,17 @@ public class BrokerController {
 
                 for (int i = 0; i < bookingIdNodes.getLength(); i++) {
                     try {
-                        bookingIds.add(Integer.parseInt(bookingIdNodes.item(i).getTextContent()));
+                        int bookingId = Integer.parseInt(bookingIdNodes.item(i).getTextContent());
+                        bookingIds.add(bookingId);
+                        hotelOrders.add(new HotelOrder(
+                                newOrder,
+                                LocalDate.ofInstant(reservation.getRoomReservations().get(i).getStartDate().toInstant(), ZoneId.systemDefault()),
+                                LocalDate.ofInstant(reservation.getRoomReservations().get(i).getEndDate().toInstant(), ZoneId.systemDefault()),
+                                bookingId,
+                                statusNodes.item(i).getTextContent(),
+                                hotelSupplierRepository.getReferenceById(1),
+                                reservation.getRoomReservations().get(i).getRoom().getId()
+                        ));
                     } catch (NumberFormatException e) {
                         System.err.println("Warning: Could not parse bookingId at index " + i + ": " + bookingIdNodes.item(i).getTextContent());
                     }
@@ -459,6 +510,15 @@ public class BrokerController {
                 model.addAttribute("error", "Error searching for hotels: " + e.getMessage());
             }
         }
+
+        if (!reservation.getFlightReservations().isEmpty()) {
+            // add stage 1 of commit here
+        }
+
+        // save stage 1 of commit
+        orderRepository.save(newOrder);
+        hotelOrderRepository.saveAll(hotelOrders);
+        flightOrderRepository.saveAll(flightOrders);
 
         if (allBookingsPending) { // Stage 2
             if (!reservation.getRoomReservations().isEmpty()) {
@@ -490,8 +550,15 @@ public class BrokerController {
                     doc.getDocumentElement().normalize(); // Normalize the document for consistent parsing
 
                     NodeList statusNodes = doc.getElementsByTagNameNS(hotelSupplierNamespaceURI, "status");
+                    String status = statusNodes.item(0).getTextContent().trim();
+                    allBookingsBooked = status.equalsIgnoreCase("booked");
 
-                    allBookingsBooked = statusNodes.item(0).getTextContent().trim().equalsIgnoreCase("booked");
+                    if (allBookingsBooked) {
+                        for (HotelOrder hotelOrder : hotelOrders) {
+                            hotelOrder.setStatus(status);
+                        }
+                        newOrder.setStatus(status);
+                    }
 
                     model.addAttribute("error", false);
 
@@ -500,6 +567,9 @@ public class BrokerController {
                     e.printStackTrace(); // Print full stack trace for detailed debugging
                     model.addAttribute("error", "Error searching for hotels: " + e.getMessage());
                 }
+            }
+            if (!reservation.getFlightReservations().isEmpty()) {
+                // add stage 2 of commit here
             }
         }
 
@@ -533,8 +603,15 @@ public class BrokerController {
                     doc.getDocumentElement().normalize(); // Normalize the document for consistent parsing
 
                     NodeList statusNodes = doc.getElementsByTagNameNS(hotelSupplierNamespaceURI, "status");
+                    String status = statusNodes.item(0).getTextContent().trim();
+                    allBookingsCanceled = status.equalsIgnoreCase("canceled");
 
-                    allBookingsCanceled = statusNodes.item(0).getTextContent().trim().equalsIgnoreCase("canceled");
+                    if (allBookingsCanceled) {
+                        for (HotelOrder hotelOrder : hotelOrders) {
+                            hotelOrder.setStatus(status);
+                        }
+                        newOrder.setStatus(status);
+                    }
 
                     model.addAttribute("error", false);
 
@@ -544,15 +621,26 @@ public class BrokerController {
                     model.addAttribute("error", "Error searching for hotels: " + e.getMessage());
                 }
             }
+            if (!reservation.getFlightReservations().isEmpty()) {
+                // add abort of commit here
+            }
         }
 
         if (allBookingsBooked) {
             // everything went well
             reservation.clear();
+            // save stage 2 of commit
+            orderRepository.save(newOrder);
+            hotelOrderRepository.saveAll(hotelOrders);
+            flightOrderRepository.saveAll(flightOrders);
         }
 
         if (allBookingsCanceled) {
             // transaction aborted
+            // save abort of commit
+            orderRepository.save(newOrder);
+            hotelOrderRepository.saveAll(hotelOrders);
+            flightOrderRepository.saveAll(flightOrders);
         }
 
         return "layout";
