@@ -163,10 +163,11 @@ public class MenuEndpoint {
     public CancelBookingResponse cancelBooking(@RequestPayload CancelBookingRequest request) {
         CancelBookingResponse response = new CancelBookingResponse();
         for (int bookingId : request.getBookingId()) {
-            Booking booking = bookingRepository.findById(bookingId).orElseThrow(
-                    () -> new IllegalArgumentException("Booking Id not found: " + bookingId));
-            booking.setStatus(String.valueOf(BookingStatus.CANCELED));
-            bookingRepository.save(booking);
+            Optional<Booking> booking = bookingRepository.findById(bookingId);
+            if (booking.isPresent()) {
+                booking.setStatus(String.valueOf(BookingStatus.CANCELED));
+                bookingRepository.save(booking);
+            }
         }
         response.setStatus(BookingStatus.CANCELED);
         return response;
