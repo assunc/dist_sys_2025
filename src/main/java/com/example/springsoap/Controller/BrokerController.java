@@ -47,6 +47,7 @@ public class BrokerController {
     private Reservation reservation;
 
     String hotelSupplierUrl = "http://hotelsupplier.azurewebsites.net:80/ws";
+    String hotelSupplierNamespaceURI = "http://foodmenu.io/gt/webservice";
     String soapRequestHead = """
        <soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" xmlns:web="http://foodmenu.io/gt/webservice">
            <soapenv:Header>
@@ -427,11 +428,13 @@ public class BrokerController {
                 String responseBody = response.getBody();
                 assert responseBody != null;
 
+                System.out.println(responseBody);
+
                 Document doc = factory.newDocumentBuilder().parse(new InputSource(new StringReader(responseBody)));
                 doc.getDocumentElement().normalize(); // Normalize the document for consistent parsing
 
-                NodeList bookingIdNodes = doc.getElementsByTagName("bookingId");
-                NodeList statusNodes = doc.getElementsByTagName("status");
+                NodeList bookingIdNodes = doc.getElementsByTagNameNS(hotelSupplierNamespaceURI, "bookingId");
+                NodeList statusNodes = doc.getElementsByTagNameNS(hotelSupplierNamespaceURI, "status");
 
                 for (int i = 0; i < bookingIdNodes.getLength(); i++) {
                     try {
@@ -457,8 +460,6 @@ public class BrokerController {
             }
         }
 
-
-
         if (allBookingsPending) { // Stage 2
             if (!reservation.getRoomReservations().isEmpty()) {
                 String soapRequest2 = soapRequestHead + """
@@ -483,11 +484,12 @@ public class BrokerController {
                     ResponseEntity<String> response = restTemplate.postForEntity(hotelSupplierUrl, new HttpEntity<>(soapRequest2, headers), String.class);
                     String responseBody = response.getBody();
                     assert responseBody != null;
+                    System.out.println(responseBody);
 
                     Document doc = factory.newDocumentBuilder().parse(new InputSource(new StringReader(responseBody)));
                     doc.getDocumentElement().normalize(); // Normalize the document for consistent parsing
 
-                    NodeList statusNodes = doc.getElementsByTagName("status");
+                    NodeList statusNodes = doc.getElementsByTagNameNS(hotelSupplierNamespaceURI, "status");
 
                     allBookingsBooked = statusNodes.item(0).getTextContent().trim().equalsIgnoreCase("booked");
 
@@ -525,11 +527,12 @@ public class BrokerController {
                     ResponseEntity<String> response = restTemplate.postForEntity(hotelSupplierUrl, new HttpEntity<>(soapRequest3, headers), String.class);
                     String responseBody = response.getBody();
                     assert responseBody != null;
+                    System.out.println(responseBody);
 
                     Document doc = factory.newDocumentBuilder().parse(new InputSource(new StringReader(responseBody)));
                     doc.getDocumentElement().normalize(); // Normalize the document for consistent parsing
 
-                    NodeList statusNodes = doc.getElementsByTagName("status");
+                    NodeList statusNodes = doc.getElementsByTagNameNS(hotelSupplierNamespaceURI, "status");
 
                     allBookingsCanceled = statusNodes.item(0).getTextContent().trim().equalsIgnoreCase("canceled");
 
@@ -545,6 +548,7 @@ public class BrokerController {
 
         if (allBookingsBooked) {
             // everything went well
+            reservation.clear();
         }
 
         if (allBookingsCanceled) {

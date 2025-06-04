@@ -28,4 +28,9 @@ public class Reservation {
         flightReservations.add(flightReservation);
     }
 
+    public void clear() {
+        roomReservations.clear();
+        flightReservations.clear();
+    }
+
 }
