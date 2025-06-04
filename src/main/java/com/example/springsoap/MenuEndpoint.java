@@ -165,8 +165,8 @@ public class MenuEndpoint {
         for (int bookingId : request.getBookingId()) {
             Optional<Booking> booking = bookingRepository.findById(bookingId);
             if (booking.isPresent()) {
-                booking.setStatus(String.valueOf(BookingStatus.CANCELED));
-                bookingRepository.save(booking);
+                booking.get().setStatus(String.valueOf(BookingStatus.CANCELED));
+                bookingRepository.save(booking.get());
             }
         }
         response.setStatus(BookingStatus.CANCELED);

@@ -101,7 +101,7 @@
                     <schemaVersion>v2</schemaVersion>
                     <resourceGroup>SpringSOAP-1746788242694-rg</resourceGroup>
                     <appName>hotelSupplier</appName>
-                    <pricingTier>B1</pricingTier>
+                    <pricingTier>F1</pricingTier>
                     <region>westeurope</region>
                     <runtime>
                         <os>Linux</os>
