@@ -11,10 +11,9 @@ public class HotelOrder {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
 
-    // Now correctly mapped as a ManyToOne relationship to the Order entity
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "order_id", nullable = false) // Maps to the 'order_id' column
-    private Order order; // The associated Order
+    @JoinColumn(name = "order_id", nullable = false)
+    private Order order;
 
     @Column(name = "start_date", nullable = false)
     private LocalDate startDate;
@@ -29,18 +28,23 @@ public class HotelOrder {
     private String status;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "hotelsupplier_id") // nullable = true based on DB schema
+    @JoinColumn(name = "hotelsupplier_id")
     private HotelSupplier hotelSupplier; // Foreign key to HotelSupplier entity
 
-    @Column(name = "room_id") // nullable = true based on DB schema
-    private Integer roomId; // Assuming this refers to a 'Room' entity not provided
+    @Column(name = "room_id")
+    private Integer roomId;
+
+    @Column(name = "hotel_name")
+    private String hotelName;
+
+    @Column(name = "room_number")
+    private int roomNumber;
 
     // Constructors
     public HotelOrder() {
     }
 
-    public HotelOrder(Order order, LocalDate startDate, LocalDate endDate,
-                      Integer bookingId, String status, HotelSupplier hotelSupplier, Integer roomId) {
+    public HotelOrder(Order order, LocalDate startDate, LocalDate endDate, Integer bookingId, String status, HotelSupplier hotelSupplier, Integer roomId, String hotelName, int roomNumber) {
         this.order = order;
         this.startDate = startDate;
         this.endDate = endDate;
@@ -48,15 +52,13 @@ public class HotelOrder {
         this.status = status;
         this.hotelSupplier = hotelSupplier;
         this.roomId = roomId;
+        this.hotelName = hotelName;
+        this.roomNumber = roomNumber;
     }
 
     // Getters and Setters
     public Integer getId() {
         return id;
-    }
-
-    public void setId(Integer id) {
-        this.id = id;
     }
 
     public Order getOrder() {
@@ -115,17 +117,35 @@ public class HotelOrder {
         this.roomId = roomId;
     }
 
+    public String getHotelName() {
+        return hotelName;
+    }
+
+    public void setHotelName(String hotelName) {
+        this.hotelName = hotelName;
+    }
+
+    public int getRoomNumber() {
+        return roomNumber;
+    }
+
+    public void setRooNumber(int roomNumber) {
+        this.roomNumber = roomNumber;
+    }
+
     @Override
     public String toString() {
         return "HotelOrder{" +
                 "id=" + id +
-                ", order=" + (order != null ? order.getId() : "null") +
+                ", order=" + order +
                 ", startDate=" + startDate +
                 ", endDate=" + endDate +
-                ", reservationId=" + bookingId +
+                ", bookingId=" + bookingId +
                 ", status='" + status + '\'' +
-                ", hotelSupplier=" + (hotelSupplier != null ? hotelSupplier.getName() : "null") +
+                ", hotelSupplier=" + hotelSupplier +
                 ", roomId=" + roomId +
+                ", hotelName='" + hotelName + '\'' +
+                ", roomNumber=" + roomNumber +
                 '}';
     }
 }

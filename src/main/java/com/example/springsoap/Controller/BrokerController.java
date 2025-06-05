@@ -1,14 +1,10 @@
 package com.example.springsoap.Controller;
 
+import com.example.springsoap.Entities.*;
 import com.example.springsoap.Model.Hotel;
 import com.example.springsoap.Model.Reservation;
 import com.example.springsoap.Model.Room;
 import com.example.springsoap.Model.RoomReservation;
-import com.example.springsoap.Entities.Order;
-import com.example.springsoap.Entities.HotelOrder;
-import com.example.springsoap.Entities.FlightOrder;
-import com.example.springsoap.Entities.AirlineSupplier;
-import com.example.springsoap.Entities.HotelSupplier;
 import com.example.springsoap.Repository.AirlineSupplierRepository;
 import com.example.springsoap.Repository.HotelSupplierRepository;
 import com.example.springsoap.Repository.HotelOrderRepository;
@@ -44,10 +40,7 @@ import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.time.LocalDate;
 import java.time.ZoneId;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 @Controller
 //@RequestMapping("/scopedproxy")
@@ -352,12 +345,11 @@ public class BrokerController {
         return "layout";
     }
 
-    @PostMapping("/payment")
-    public String payment(@RequestParam Map<String, String> allRequestParams, @AuthenticationPrincipal OidcUser user, Model model) {
+    @PostMapping("/add-to-cart")
+    public String addToCart(@RequestParam Map<String, String> allRequestParams, @AuthenticationPrincipal OidcUser user, Model model) {
         boolean isLoggedIn = user != null;
         model.addAttribute("isLoggedIn", isLoggedIn);
         model.addAttribute("title", "Payment Information");
-        model.addAttribute("contentTemplate", "payment");
 
         SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
         Date startDate, endDate;
@@ -378,6 +370,39 @@ public class BrokerController {
                 ));
             }
         }
+
+        return "redirect:/shopping-cart";
+    }
+
+    @PostMapping("/payment")
+    public String payment(@RequestParam Map<String, String> allRequestParams, @AuthenticationPrincipal OidcUser user, Model model) {
+        boolean isLoggedIn = user != null;
+        model.addAttribute("isLoggedIn", isLoggedIn);
+        model.addAttribute("title", "Payment Information");
+        model.addAttribute("contentTemplate", "payment");
+
+        SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
+        Date startDate, endDate;
+        if (allRequestParams.containsKey("startDate") && allRequestParams.containsKey("endDate")) {
+            try {
+                startDate = dateFormat.parse(allRequestParams.get("startDate"));
+                endDate = dateFormat.parse(allRequestParams.get("endDate"));
+            } catch (ParseException e) {
+                throw new RuntimeException(e);
+            }
+            // Iterate through all request parameters to find selected room checkboxes
+            // And the value is "on" when checked.
+            for (Map.Entry<String, String> entry : allRequestParams.entrySet()) {
+                if (entry.getKey().startsWith("Room") && entry.getValue().equals("on")) {
+                    reservation.addRoomReservation(new RoomReservation(
+                            new Room(entry.getKey()),
+                            allRequestParams.get("name"),
+                            startDate, endDate
+                    ));
+                }
+            }
+        }
+
         model.addAttribute("reservation", reservation);
 
         // --- Autofill Logic ---
@@ -481,15 +506,18 @@ public class BrokerController {
                     try {
                         int bookingId = Integer.parseInt(bookingIdNodes.item(i).getTextContent());
                         bookingIds.add(bookingId);
-                        hotelOrders.add(new HotelOrder(
+                        HotelOrder newHotelOrder = new HotelOrder(
                                 newOrder,
                                 LocalDate.ofInstant(reservation.getRoomReservations().get(i).getStartDate().toInstant(), ZoneId.systemDefault()),
                                 LocalDate.ofInstant(reservation.getRoomReservations().get(i).getEndDate().toInstant(), ZoneId.systemDefault()),
                                 bookingId,
                                 statusNodes.item(i).getTextContent(),
                                 hotelSupplierRepository.getReferenceById(1),
-                                reservation.getRoomReservations().get(i).getRoom().getId()
-                        ));
+                                reservation.getRoomReservations().get(i).getRoom().getId(),
+                                reservation.getRoomReservations().get(i).getHotelName(),
+                                reservation.getRoomReservations().get(i).getRoom().getNumber()
+                        );
+                        hotelOrders.add(newHotelOrder);
                     } catch (NumberFormatException e) {
                         System.err.println("Warning: Could not parse bookingId at index " + i + ": " + bookingIdNodes.item(i).getTextContent());
                     }
@@ -644,6 +672,84 @@ public class BrokerController {
         }
 
         return "layout";
+    }
+
+    @GetMapping("/shopping-cart")
+    public String viewShoppingCart(Model model, @AuthenticationPrincipal OidcUser user) {
+        boolean isLoggedIn = (user != null);
+        model.addAttribute("isLoggedIn", isLoggedIn);
+        model.addAttribute("title", "My Bookings");
+        model.addAttribute("contentTemplate", "shopping-cart");
+        model.addAttribute("reservation", reservation);
+
+        return "layout";
+    }
+
+    @GetMapping("/bookings")
+    public String viewBookings(Model model, @AuthenticationPrincipal OidcUser user) {
+        boolean isLoggedIn = (user != null);
+        model.addAttribute("isLoggedIn", isLoggedIn);
+        model.addAttribute("title", "My Bookings");
+        model.addAttribute("contentTemplate", "bookings");
+
+        if (isLoggedIn) {
+            User currentUser = userService.findOrCreateFromOidcUser(user);
+
+            // Fetch hotel orders associated with this user's orders
+            List<HotelOrder> userHotelOrders = new ArrayList<>();
+            for (Order order : orderRepository.findByUser(currentUser)) {
+                userHotelOrders.addAll(hotelOrderRepository.findByOrder(order));
+            }
+
+            // Sort the list chronologically by start date
+            userHotelOrders.sort(Comparator.comparing(HotelOrder::getStartDate));
+
+            model.addAttribute("hotelOrders", userHotelOrders);
+        } else {
+            model.addAttribute("hotelOrders", List.of());
+        }
+
+        return "layout";
+    }
+
+    @PostMapping("/bookings/cancelHotel")
+    public String cancelHotelBooking(@RequestParam("bookingId") Integer bookingId,
+                                     @RequestParam("orderId") Integer orderId,
+                                     Model model, @AuthenticationPrincipal OidcUser user) {
+        boolean isLoggedIn = (user != null);
+        model.addAttribute("isLoggedIn", isLoggedIn);
+        Optional<HotelOrder> hotelOrder = hotelOrderRepository.findById(bookingId);
+        if (hotelOrder.isPresent() && !hotelOrder.get().getStatus().equalsIgnoreCase("cancelled")) {
+            String soapRequest = soapRequestHead + String.format("""
+            <soapenv:Body>
+                <web:cancelBookingRequest>
+                    <web:bookingId>%d</web:bookingId>
+                </web:cancelBookingRequest>
+            </soapenv:Body>
+            </soapenv:Envelope>
+            """, hotelOrder.get().getBookingId());
+            System.out.println(soapRequest);
+            try {
+                ResponseEntity<String> response = restTemplate.postForEntity(hotelSupplierUrl, new HttpEntity<>(soapRequest, headers), String.class);
+                String responseBody = response.getBody();
+                assert responseBody != null;
+                System.out.println(responseBody);
+                Document doc = factory.newDocumentBuilder().parse(new InputSource(new StringReader(responseBody)));
+                doc.getDocumentElement().normalize(); // Normalize the document for consistent parsing
+                NodeList statusNodes = doc.getElementsByTagNameNS(hotelSupplierNamespaceURI, "status");
+                String status = statusNodes.item(0).getTextContent().trim();
+                hotelOrder.get().setStatus(status);
+                hotelOrderRepository.save(hotelOrder.get());
+
+                model.addAttribute("error", false);
+            } catch (Exception e) {
+                System.err.println("Exception during booking search: " + e.getMessage());
+                e.printStackTrace(); // Print full stack trace for detailed debugging
+                model.addAttribute("error", "Error searching for hotels: " + e.getMessage());
+            }
+        }
+
+        return "redirect:/bookings"; // Redirect back to the bookings page
     }
 
     @GetMapping("/combo")

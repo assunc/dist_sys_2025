@@ -48,9 +48,6 @@
              min-height: calc(100vh - 200px);
         }
         #login-button ,#logout-button{
-                position: absolute;
-                top: 20px;
-                right: 20px;
                 background-color: #4CAF50;
                 color: white;
                 padding: 8px 16px;
@@ -61,15 +58,33 @@
                 cursor: pointer;
                 }
 
-        #login-button:hover {
+        #profile-button, #my-bookings-button, #shopping-cart-button{
+                background-color: GhostWhite;
+                color: DarkSlateGrey;
+                padding: 8px 16px;
+                border: none;
+                text-decoration: none;
+                font-size: 14px;
+                border-radius: 4px;
+                cursor: pointer;
+                }
+
+        #login-button:hover, #logout-button:hover {
             background-color: #45a049;
+        }
+
+        h1>a:hover,
+        h1>a:active,
+        h1>a:focus {
+            color: inherit;
+            text-decoration: none;
         }
 
     </style>
 </head>
 <body>
 <header>
-    <h1>Travel Broker</h1>
+    <h1><a href="/" style="color: inherit; text-decoration: none;">Travel Broker</a></h1>
     <script>
         const url = new URL(window.location.href);
         if (url.searchParams.get("loggedOut")) {
@@ -79,7 +94,10 @@
         }
     </script>
 
-    <div style="position: absolute; top: 20px; right: 20px;">
+    <div style="display: flex; gap: 10px; position: absolute; top: 20px; right: 50px;">
+        <a th:if="${isLoggedIn}" th:href="@{/profile}" id="profile-button">Profile</a>
+        <a th:if="${isLoggedIn}" th:href="@{/bookings}" id="my-bookings-button">My Bookings</a>
+        <a th:href="@{/shopping-cart}" id="shopping-cart-button">Shopping Cart</a>
         <a th:if="${!isLoggedIn}" th:href="@{/oauth2/authorization/auth0}" id="login-button">Login</a>
         <a th:if="${isLoggedIn}" th:href="@{/logout}" id="logout-button">Logout</a>
     </div>

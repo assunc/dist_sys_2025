@@ -73,9 +73,12 @@
                     No rooms found for the selected criteria.
                 </p>
 
-                <div th:if="${searchPerformed}" class="mt-4" style="max-width: 200px; margin-bottom: 80px;">
+                <div th:if="${searchPerformed}" class="mt-4" style="display: flex; max-width: 200px; margin-bottom: 80px;">
+                    <button type="submit" th:formaction="@{/add-to-cart}" class="btn btn-success w-100">
+                        <i class="fas fa-check"></i> Add to Shopping Cart
+                    </button>
                     <button type="submit" th:formaction="@{/payment}" class="btn btn-success w-100">
-                        <i class="fas fa-check"></i> Reserve
+                        <i class="fas fa-check"></i> Procced to Payment
                     </button>
                 </div>
             </form>
