@@ -6,49 +6,27 @@ import com.example.springsoap.Model.Reservation;
 import com.example.springsoap.Model.Room;
 import com.example.springsoap.Model.RoomReservation;
 import com.example.springsoap.Repository.AirlineSupplierRepository;
-import com.example.springsoap.Repository.HotelSupplierRepository;
 import com.example.springsoap.Repository.HotelOrderRepository;
 import com.example.springsoap.Repository.FlightOrderRepository;
 import com.example.springsoap.Repository.OrderRepository;
 import com.example.springsoap.UserService;
-import jakarta.xml.bind.SchemaOutputResolver;
+import com.example.springsoap.HotelService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.format.annotation.DateTimeFormat;
-import org.springframework.http.HttpEntity;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.security.oauth2.core.oidc.user.OidcUser;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
-import org.springframework.web.client.RestTemplate;
-import org.apache.commons.lang3.StringUtils;
 
-import org.w3c.dom.Document;
-import org.w3c.dom.NodeList;
-import org.xml.sax.InputSource;
-
-import javax.xml.parsers.DocumentBuilder;
-import javax.xml.parsers.DocumentBuilderFactory;
-import javax.xml.xpath.XPath;
-import javax.xml.xpath.XPathConstants;
-import javax.xml.xpath.XPathFactory;
-import java.io.StringReader;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
-import java.time.LocalDate;
-import java.time.ZoneId;
 import java.util.*;
 
 @Controller
-//@RequestMapping("/scopedproxy")
 public class BrokerController {
     private final UserService userService;
-    private final RestTemplate restTemplate;
-    private final XPath xpath;
-    private final HotelSupplierRepository hotelSupplierRepository;
+    private final HotelService hotelService;
     private final AirlineSupplierRepository airlineSupplierRepository;
     private final HotelOrderRepository hotelOrderRepository;
     private final FlightOrderRepository flightOrderRepository;
@@ -56,55 +34,22 @@ public class BrokerController {
 
     private final Reservation reservation;
 
-    String hotelSupplierUrl = "http://hotelsupplier.azurewebsites.net:80/ws";
-    String hotelSupplierNamespaceURI = "http://foodmenu.io/gt/webservice";
-    String soapRequestHead = """
-       <soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" xmlns:web="http://foodmenu.io/gt/webservice">
-           <soapenv:Header>
-               <wsse:Security soapenv:mustUnderstand="1" xmlns:wsse="http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-secext-1.0.xsd" xmlns:wsu="http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-utility-1.0.xsd">
-                   <wsse:UsernameToken wsu:Id="UsernameToken-90EE12B980F2A1E63C16196236965155">
-                       <wsse:Username>brokerApp</wsse:Username>
-                       <wsse:Password Type="http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-username-token-profile-1.0#PasswordText">$2a$10$t39txwmagJ8611gPSQyJxeV5BlH6MQKLzxTRo4uKFDijXup0cUzAG</wsse:Password>
-                   </wsse:UsernameToken>
-               </wsse:Security>
-           </soapenv:Header>
-       """;
-    HttpHeaders headers = new HttpHeaders();
-    DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
-
     @Autowired
     public BrokerController(
-            UserService userService,
-            RestTemplate restTemplate,
+            UserService userService, HotelService hotelService,
             Reservation reservation,
-            HotelSupplierRepository hotelSupplierRepository,
             AirlineSupplierRepository airlineSupplierRepository,
             HotelOrderRepository hotelOrderRepository,
             FlightOrderRepository flightOrderRepository,
             OrderRepository orderRepository
     ) {
         this.userService = userService;
-        this.restTemplate = restTemplate;
+        this.hotelService = hotelService;
         this.reservation = reservation;
-        this.hotelSupplierRepository = hotelSupplierRepository;
         this.airlineSupplierRepository = airlineSupplierRepository;
         this.hotelOrderRepository = hotelOrderRepository;
         this.flightOrderRepository = flightOrderRepository;
         this.orderRepository = orderRepository;
-        xpath = XPathFactory.newInstance().newXPath();
-        // Register a custom NamespaceContext to handle "ns2" and other namespaces
-        xpath.setNamespaceContext(new javax.xml.namespace.NamespaceContext() {
-            public String getNamespaceURI(String prefix) {
-                // Map "ns2" to the correct namespace URI from the response
-                if (prefix.equals("ns2")) return "http://foodmenu.io/gt/webservice";
-                if (prefix.equals("SOAP-ENV")) return "http://schemas.xmlsoap.org/soap/envelope/";
-                return null;
-            }
-            public String getPrefix(String namespaceURI) { return null; }
-            public java.util.Iterator<String> getPrefixes(String namespaceURI) { return null; } // Corrected type
-        });
-        headers.setContentType(MediaType.TEXT_XML);
-        factory.setNamespaceAware(true);
     }
 
 
@@ -163,47 +108,9 @@ public class BrokerController {
         model.addAttribute("title", "Hotels");
         model.addAttribute("contentTemplate", "hotels");
 
-        SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
-
-        // Manually construct SOAP request XML
-        String soapRequest = soapRequestHead + String.format("""
-                   <soapenv:Body>
-                      <web:getFreeHotelsRequest>
-                         <web:startDate>%s</web:startDate>
-                         <web:endDate>%s</web:endDate>
-                      </web:getFreeHotelsRequest>
-                   </soapenv:Body>
-                </soapenv:Envelope>
-                """,
-                dateFormat.format(startDate), dateFormat.format(endDate)
-        );
-
-        List<Hotel> freeHotels = new ArrayList<>();
-
         try {
-            ResponseEntity<String> response = restTemplate.postForEntity(hotelSupplierUrl, new HttpEntity<>(soapRequest, headers), String.class);
-            String responseBody = response.getBody();
-            assert responseBody != null;
+            List<Hotel> freeHotels = hotelService.getFreeHotels(startDate, endDate, destination);
 
-            // XPath to find all hotel elements (now using 'ns2' prefix)
-            NodeList hotelNodes = (NodeList) xpath.evaluate("//ns2:hotels", factory.newDocumentBuilder().parse(new InputSource(new StringReader(responseBody))), XPathConstants.NODESET);
-
-            for (int i = 0; i < hotelNodes.getLength(); i++) {
-                org.w3c.dom.Element roomElement = (org.w3c.dom.Element) hotelNodes.item(i);
-                String city = xpath.evaluate("ns2:city", roomElement);
-                String country = xpath.evaluate("ns2:country", roomElement);
-                if (destination.isEmpty() || StringUtils.containsIgnoreCase(city, destination) || StringUtils.containsIgnoreCase(country, destination)) {
-                    freeHotels.add(new Hotel(
-                            Integer.parseInt(xpath.evaluate("ns2:id", roomElement)),
-                            xpath.evaluate("ns2:name", roomElement),
-                            xpath.evaluate("ns2:address", roomElement),
-                            city,
-                            country,
-                            xpath.evaluate("ns2:phoneNumber", roomElement),
-                            xpath.evaluate("ns2:description", roomElement)
-                    ));
-                }
-            }
             model.addAttribute("hotels", freeHotels);
             model.addAttribute("searchPerformed", true);
             model.addAttribute("hasHotels", !freeHotels.isEmpty());
@@ -237,43 +144,9 @@ public class BrokerController {
         model.addAttribute("isLoggedIn", isLoggedIn);
         model.addAttribute("title", "Hotel Info");
         model.addAttribute("contentTemplate", "hotel-info");
-        // Initialize rooms list to empty when first loading the page
-
-        // Manually construct SOAP request XML
-        String soapRequest = soapRequestHead + String.format("""
-                   <soapenv:Body>
-                      <web:getHotelRequest>
-                         <web:hotelId>%d</web:hotelId>
-                      </web:getHotelRequest>
-                   </soapenv:Body>
-                </soapenv:Envelope>
-                """,
-                hotelId
-        );
-
         try {
-            ResponseEntity<String> response = restTemplate.postForEntity(hotelSupplierUrl, new HttpEntity<>(soapRequest, headers), String.class);
-            String responseBody = response.getBody();
-
-            // Parse the SOAP response
-            assert responseBody != null;
-
-            // XPath to find all hotel elements (now using 'ns2' prefix)
-            NodeList hotelNodes = (NodeList) xpath.evaluate("//ns2:hotel", factory.newDocumentBuilder().parse(new InputSource(new StringReader(responseBody))), XPathConstants.NODESET);
-
-            for (int i = 0; i < hotelNodes.getLength(); i++) {
-                org.w3c.dom.Element roomElement = (org.w3c.dom.Element) hotelNodes.item(i);
-                Hotel hotel = new Hotel(
-                        Integer.parseInt(xpath.evaluate("ns2:id", roomElement)),
-                        xpath.evaluate("ns2:name", roomElement),
-                        xpath.evaluate("ns2:address", roomElement),
-                        xpath.evaluate("ns2:city", roomElement),
-                        xpath.evaluate("ns2:country", roomElement),
-                        xpath.evaluate("ns2:phoneNumber", roomElement),
-                        xpath.evaluate("ns2:description", roomElement)
-                );
-                model.addAttribute("hotel", hotel);
-            }
+            Hotel hotel = hotelService.getHotel(hotelId);
+            model.addAttribute("hotel", hotel);
             model.addAttribute("error", false);
         } catch (Exception e) {
             System.err.println("Exception during hotel search: " + e.getMessage());
@@ -282,52 +155,12 @@ public class BrokerController {
             model.addAttribute("hotel", null); // Ensure rooms list is empty on error
         }
 
-        SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
-
-        // Manually construct SOAP request XML
-        String soapRequest2 = soapRequestHead + String.format("""
-                   <soapenv:Body>
-                      <web:getFreeRoomsRequest>
-                         <web:startDate>%s</web:startDate>
-                         <web:endDate>%s</web:endDate>
-                         <web:hotelId>%d</web:hotelId>
-                      </web:getFreeRoomsRequest>
-                   </soapenv:Body>
-                </soapenv:Envelope>
-                """,
-                dateFormat.format(startDate), dateFormat.format(endDate), hotelId
-        );
-
-        List<Room> filteredRooms = new ArrayList<>();
         try {
-            ResponseEntity<String> response = restTemplate.postForEntity(hotelSupplierUrl, new HttpEntity<>(soapRequest2, headers), String.class);
-            String responseBody = response.getBody();
-
-            // Parse the SOAP response
-            assert responseBody != null;
-
-            // XPath to find all hotel elements (now using 'ns2' prefix)
-            NodeList roomNodes = (NodeList) xpath.evaluate("//ns2:rooms", factory.newDocumentBuilder().parse(new InputSource(new StringReader(responseBody))), XPathConstants.NODESET);
-
-            for (int i = 0; i < roomNodes.getLength(); i++) {
-                org.w3c.dom.Element roomElement = (org.w3c.dom.Element) roomNodes.item(i);
-                int roomNOfPeople = Integer.parseInt(xpath.evaluate("ns2:nOfPeople", roomElement));
-
-                if (roomNOfPeople >= numberOfPeople) {
-                    filteredRooms.add(new Room(
-                            Integer.parseInt(xpath.evaluate("ns2:roomId", roomElement)),
-                            Integer.parseInt(xpath.evaluate("ns2:number", roomElement)),
-                            roomNOfPeople,
-                            Integer.parseInt(xpath.evaluate("ns2:price", roomElement))
-                    ));
-                }
-            }
+            List<Room> filteredRooms = hotelService.getFreeRooms(hotelId, startDate, endDate, numberOfPeople);
             model.addAttribute("rooms", filteredRooms);
             model.addAttribute("searchPerformed", true);
             model.addAttribute("hasRooms", !filteredRooms.isEmpty());
             model.addAttribute("error", false);
-
-
         } catch (Exception e) {
             System.err.println("Exception during room search: " + e.getMessage());
             e.printStackTrace(); // Print full stack trace for detailed debugging
@@ -459,79 +292,10 @@ public class BrokerController {
         boolean allBookingsBooked = true;
         boolean allBookingsCanceled = false;
 
-        List<Integer> bookingIds = new ArrayList<>();
-
         if (!reservation.getRoomReservations().isEmpty()) {
-            // Manually construct SOAP request XML
-            String soapRequest = soapRequestHead +"""
-                <soapenv:Body>
-                    <web:addBookingRequest>
-                """;
-            for (RoomReservation roomReservation : reservation.getRoomReservations()) {
-                soapRequest += String.format("""
-                   <web:booking>
-                       <web:roomId>%d</web:roomId>
-                       <web:startDate>%s</web:startDate>
-                       <web:endDate>%s</web:endDate>
-                   </web:booking>
-                   """,
-                        roomReservation.getRoom().getId(),
-                        dateFormat.format(roomReservation.getStartDate()),
-                        dateFormat.format(roomReservation.getEndDate())
-                );
-            }
-            soapRequest += """
-                   </web:addBookingRequest>
-                   </soapenv:Body>
-                </soapenv:Envelope>
-                """;
-
-
-            System.out.println(soapRequest);
-
             try {
-                ResponseEntity<String> response = restTemplate.postForEntity(hotelSupplierUrl, new HttpEntity<>(soapRequest, headers), String.class);
-                String responseBody = response.getBody();
-                assert responseBody != null;
-
-                System.out.println(responseBody);
-
-                Document doc = factory.newDocumentBuilder().parse(new InputSource(new StringReader(responseBody)));
-                doc.getDocumentElement().normalize(); // Normalize the document for consistent parsing
-
-                NodeList bookingIdNodes = doc.getElementsByTagNameNS(hotelSupplierNamespaceURI, "bookingId");
-                NodeList statusNodes = doc.getElementsByTagNameNS(hotelSupplierNamespaceURI, "status");
-
-                for (int i = 0; i < bookingIdNodes.getLength(); i++) {
-                    try {
-                        int bookingId = Integer.parseInt(bookingIdNodes.item(i).getTextContent());
-                        bookingIds.add(bookingId);
-                        HotelOrder newHotelOrder = new HotelOrder(
-                                newOrder,
-                                LocalDate.ofInstant(reservation.getRoomReservations().get(i).getStartDate().toInstant(), ZoneId.systemDefault()),
-                                LocalDate.ofInstant(reservation.getRoomReservations().get(i).getEndDate().toInstant(), ZoneId.systemDefault()),
-                                bookingId,
-                                statusNodes.item(i).getTextContent(),
-                                hotelSupplierRepository.getReferenceById(1),
-                                reservation.getRoomReservations().get(i).getRoom().getId(),
-                                reservation.getRoomReservations().get(i).getHotelName(),
-                                reservation.getRoomReservations().get(i).getRoom().getNumber()
-                        );
-                        hotelOrders.add(newHotelOrder);
-                    } catch (NumberFormatException e) {
-                        System.err.println("Warning: Could not parse bookingId at index " + i + ": " + bookingIdNodes.item(i).getTextContent());
-                    }
-                }
-
-                for (int i = 0; i < statusNodes.getLength(); i++) {
-                    String statusText = statusNodes.item(i).getTextContent();
-                    if (!statusText.trim().equalsIgnoreCase("pending")) {
-                        allBookingsPending = false;
-                        break;
-                    }
-                }
+                allBookingsPending = hotelService.reserveOrders(reservation.getRoomReservations(), newOrder, hotelOrders);
                 model.addAttribute("error", false);
-
             } catch (Exception e) {
                 System.err.println("Exception during booking search: " + e.getMessage());
                 e.printStackTrace(); // Print full stack trace for detailed debugging
@@ -550,46 +314,9 @@ public class BrokerController {
 
         if (allBookingsPending) { // Stage 2
             if (!reservation.getRoomReservations().isEmpty()) {
-                String soapRequest2 = soapRequestHead + """
-                <soapenv:Body>
-                    <web:confirmBookingRequest>
-                """;
-                for (int bookingId : bookingIds) {
-                    soapRequest2 += String.format("""
-                   <web:bookingId>%d</web:bookingId>
-                   """,bookingId
-                    );
-                }
-                soapRequest2 += """
-                   </web:confirmBookingRequest>
-                   </soapenv:Body>
-                </soapenv:Envelope>
-                """;
-
-                System.out.println(soapRequest2);
-
                 try {
-                    ResponseEntity<String> response = restTemplate.postForEntity(hotelSupplierUrl, new HttpEntity<>(soapRequest2, headers), String.class);
-                    String responseBody = response.getBody();
-                    assert responseBody != null;
-                    System.out.println(responseBody);
-
-                    Document doc = factory.newDocumentBuilder().parse(new InputSource(new StringReader(responseBody)));
-                    doc.getDocumentElement().normalize(); // Normalize the document for consistent parsing
-
-                    NodeList statusNodes = doc.getElementsByTagNameNS(hotelSupplierNamespaceURI, "status");
-                    String status = statusNodes.item(0).getTextContent().trim();
-                    allBookingsBooked = status.equalsIgnoreCase("booked");
-
-                    if (allBookingsBooked) {
-                        for (HotelOrder hotelOrder : hotelOrders) {
-                            hotelOrder.setStatus(status);
-                        }
-                        newOrder.setStatus(status);
-                    }
-
+                    allBookingsBooked = hotelService.confirmOrders(newOrder, hotelOrders);
                     model.addAttribute("error", false);
-
                 } catch (Exception e) {
                     System.err.println("Exception during booking search: " + e.getMessage());
                     e.printStackTrace(); // Print full stack trace for detailed debugging
@@ -603,46 +330,9 @@ public class BrokerController {
 
         if (!allBookingsPending || !allBookingsBooked) { // Abort
             if (!reservation.getRoomReservations().isEmpty()) {
-                String soapRequest3 = soapRequestHead + """
-                <soapenv:Body>
-                    <web:cancelBookingRequest>
-                """;
-                for (int bookingId : bookingIds) {
-                    soapRequest3 += String.format("""
-                   <web:bookingId>%d</web:bookingId>
-                   """,bookingId
-                    );
-                }
-                soapRequest3 += """
-                   </web:cancelBookingRequest>
-                   </soapenv:Body>
-                </soapenv:Envelope>
-                """;
-
-                System.out.println(soapRequest3);
-
                 try {
-                    ResponseEntity<String> response = restTemplate.postForEntity(hotelSupplierUrl, new HttpEntity<>(soapRequest3, headers), String.class);
-                    String responseBody = response.getBody();
-                    assert responseBody != null;
-                    System.out.println(responseBody);
-
-                    Document doc = factory.newDocumentBuilder().parse(new InputSource(new StringReader(responseBody)));
-                    doc.getDocumentElement().normalize(); // Normalize the document for consistent parsing
-
-                    NodeList statusNodes = doc.getElementsByTagNameNS(hotelSupplierNamespaceURI, "status");
-                    String status = statusNodes.item(0).getTextContent().trim();
-                    allBookingsCanceled = status.equalsIgnoreCase("canceled");
-
-                    if (allBookingsCanceled) {
-                        for (HotelOrder hotelOrder : hotelOrders) {
-                            hotelOrder.setStatus(status);
-                        }
-                        newOrder.setStatus(status);
-                    }
-
+                    allBookingsCanceled = hotelService.cancelOrders(newOrder, hotelOrders);
                     model.addAttribute("error", false);
-
                 } catch (Exception e) {
                     System.err.println("Exception during booking search: " + e.getMessage());
                     e.printStackTrace(); // Print full stack trace for detailed debugging
@@ -713,34 +403,15 @@ public class BrokerController {
     }
 
     @PostMapping("/bookings/cancelHotel")
-    public String cancelHotelBooking(@RequestParam("bookingId") Integer bookingId,
-                                     @RequestParam("orderId") Integer orderId,
+    public String cancelHotelBooking(@RequestParam("hotelOrderId") Integer hotelOrderId,
                                      Model model, @AuthenticationPrincipal OidcUser user) {
         boolean isLoggedIn = (user != null);
         model.addAttribute("isLoggedIn", isLoggedIn);
-        Optional<HotelOrder> hotelOrder = hotelOrderRepository.findById(bookingId);
+        Optional<HotelOrder> hotelOrder = hotelOrderRepository.findById(hotelOrderId);
         if (hotelOrder.isPresent() && !hotelOrder.get().getStatus().equalsIgnoreCase("cancelled")) {
-            String soapRequest = soapRequestHead + String.format("""
-            <soapenv:Body>
-                <web:cancelBookingRequest>
-                    <web:bookingId>%d</web:bookingId>
-                </web:cancelBookingRequest>
-            </soapenv:Body>
-            </soapenv:Envelope>
-            """, hotelOrder.get().getBookingId());
-            System.out.println(soapRequest);
             try {
-                ResponseEntity<String> response = restTemplate.postForEntity(hotelSupplierUrl, new HttpEntity<>(soapRequest, headers), String.class);
-                String responseBody = response.getBody();
-                assert responseBody != null;
-                System.out.println(responseBody);
-                Document doc = factory.newDocumentBuilder().parse(new InputSource(new StringReader(responseBody)));
-                doc.getDocumentElement().normalize(); // Normalize the document for consistent parsing
-                NodeList statusNodes = doc.getElementsByTagNameNS(hotelSupplierNamespaceURI, "status");
-                String status = statusNodes.item(0).getTextContent().trim();
-                hotelOrder.get().setStatus(status);
+                hotelService.cancelOrders(hotelOrder.get().getOrder(), List.of(hotelOrder.get()));
                 hotelOrderRepository.save(hotelOrder.get());
-
                 model.addAttribute("error", false);
             } catch (Exception e) {
                 System.err.println("Exception during booking search: " + e.getMessage());

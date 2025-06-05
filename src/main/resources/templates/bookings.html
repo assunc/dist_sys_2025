@@ -24,9 +24,7 @@
             <p class="status">Status: <span th:text="${order.status}"></span></p>
 
             <form th:action="@{/bookings/cancelHotel}" method="post">
-                <input type="hidden" name="bookingId" th:value="${order.id}" />
-                <input type="hidden" name="orderId" th:value="${order.order != null ? order.order.id : ''}" />
-
+                <input type="hidden" name="hotelOrderId" th:value="${order.id}" />
                 <button type="submit" class="cancel-button" th:unless="${order.status == 'canceled'}">
                     Cancel Booking
                 </button>
