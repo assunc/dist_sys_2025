@@ -2,9 +2,86 @@
 <html xmlns:th="http://www.thymeleaf.org">
 <head>
     <title>My Bookings</title>
+
 </head>
 <body>
 <div th:fragment="content">
+    <style>
+        body {
+            background-color: #f8f9fa;
+            font-family: "Segoe UI", Roboto, sans-serif;
+            padding: 30px;
+        }
+
+        h2 {
+            color: #333;
+            margin-bottom: 30px;
+        }
+
+        .no-bookings {
+            background-color: #ffffff;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.03);
+        }
+
+        .booking-item {
+            background-color: #ffffff;
+            border-left: 5px solid #007bff;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 1px 6px rgba(0, 0, 0, 0.05);
+        }
+
+        .booking-item h3 {
+            margin-top: 0;
+            font-size: 18px;
+            color: #007bff;
+        }
+
+        .details {
+            font-size: 14px;
+            color: #555;
+            margin-top: 10px;
+            line-height: 1.6;
+        }
+
+        .status {
+            font-size: 14px;
+            margin-top: 10px;
+            font-weight: 600;
+            color: #444;
+        }
+
+        .cancel-button {
+            margin-top: 15px;
+            background-color: #dc3545;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: background-color 0.2s ease;
+        }
+
+        .cancel-button:hover {
+            background-color: #c82333;
+        }
+
+        a {
+            color: #007bff;
+            text-decoration: none;
+            font-weight: 500;
+        }
+
+        a:hover {
+            text-decoration: underline;
+        }
+    </style>
+
     <h2>Your Hotel Bookings</h2>
 
     <div th:if="${hotelOrders.isEmpty()}" class="no-bookings">
