@@ -54,6 +54,11 @@ public class SecurityConfig {
                         .requestMatchers("/manager/**").hasRole("manager")
                         .anyRequest().permitAll()
                 )
+                .exceptionHandling(exception ->
+                        exception.accessDeniedHandler((request, response, accessDeniedException) -> {
+                            response.sendRedirect("/"); //  redirect after 403
+                        })
+                )
                 .oauth2Login(oauth2 -> oauth2
                         .userInfoEndpoint(userInfo -> userInfo
                                 .oidcUserService(oidcUserService())))
@@ -102,10 +107,10 @@ public class SecurityConfig {
         return (request, response, authentication) -> {
             System.out.println("Logout triggered");
 
-            // ✅ Manually clear the SecurityContext
+            //  Manually clear the SecurityContext
             SecurityContextHolder.clearContext();
 
-            // ✅ Also invalidate the HttpSession (in case Spring didn't)
+            // Also invalidate the HttpSession (in case Spring didn't)
             HttpSession session = request.getSession(false); // does not create its own session false
 
             if (session != null) {
