@@ -76,21 +76,26 @@ public class SecurityConfig {
             @Override
             public OidcUser loadUser(OidcUserRequest userRequest) {
                 OidcUser oidcUser = delegate.loadUser(userRequest);
-
                 Map<String, Object> claims = oidcUser.getClaims();
-                List<String> roles = (List<String>) claims.getOrDefault("https://distributed.com/roles", List.of());
 
                 Set<GrantedAuthority> authorities = new HashSet<>();
-                for (String role : roles) {
+
+                Object rawRoles = claims.get("https://travelbroker.com/role");
+                if (rawRoles instanceof String role) {
                     authorities.add(new SimpleGrantedAuthority("ROLE_" + role));
+                } else if (rawRoles instanceof List<?> roleList) {
+                    for (Object r : roleList) {
+                        authorities.add(new SimpleGrantedAuthority("ROLE_" + r.toString()));
+                    }
                 }
 
-                // Add default authorities (like 'SCOPE_openid' etc.)
+                // Add default OpenID scope authorities
                 authorities.addAll(oidcUser.getAuthorities());
 
                 return new DefaultOidcUser(authorities, oidcUser.getIdToken(), oidcUser.getUserInfo());
             }
         };
+
     }
 
     private LogoutSuccessHandler oidcLogoutSuccessHandler() {

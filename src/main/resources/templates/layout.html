@@ -204,6 +204,11 @@
             <div id="profileDropdown" class="dropdown-menu">
                 <a th:href="@{/profile}"><i class="fa-solid fa-user"></i> Profile</a>
                 <a th:href="@{/bookings}"><i class="fa-solid fa-calendar-check"></i> My Bookings</a>
+                <!-- 👇 Show Dashboard only if role is manager -->
+                <a th:if="${#authentication.principal.claims['https://travelbroker.com/role'] == 'manager'}"
+                   th:href="@{/manager/dashboard}">
+                    <i class="fa-solid fa-chart-line"></i> Dashboard
+                </a>
                 <a th:href="@{/logout}"><i class="fa-solid fa-right-from-bracket"></i> Logout</a>
             </div>
         </div>

@@ -431,6 +431,16 @@ public class BrokerController {
         model.addAttribute("contentTemplate", "combo");
         return "layout";
     }
+    @GetMapping("/manager/dashboard")
+    public String managerDashboard(@AuthenticationPrincipal OidcUser user, Model model) {
+        boolean isLoggedIn = user != null;
+        model.addAttribute("isLoggedIn", isLoggedIn);
+        model.addAttribute("title", "Dashboard");
+        model.addAttribute("contentTemplate", "dashboard");
+
+        return "layout";
+    }
+
 
     @GetMapping("/logged-out")
     public String loggedOut(@AuthenticationPrincipal OidcUser user, Model model) {
