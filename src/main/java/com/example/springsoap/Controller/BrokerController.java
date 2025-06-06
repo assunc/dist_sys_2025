@@ -152,24 +152,43 @@ public class BrokerController {
     }
 
 
-
-
+//    @GetMapping("/flight-info/{id}")
+//    public String flightDetails(@PathVariable Long id, Model model) throws IOException, InterruptedException, URISyntaxException {
+//        HttpRequest request = HttpRequest.newBuilder()
+//                .uri(new URI("http://localhost:8081/flights/" + id))
+//                .GET()
+//                .build();
+//
+//        HttpClient client = HttpClient.newHttpClient();
+//        HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+//
+//        ObjectMapper mapper = new ObjectMapper();
+//        Airline flight = mapper.readValue(response.body(), Airline.class);
+//        model.addAttribute("flight", flight);
+//        return "flight-info";
+//    }
 
     @GetMapping("/flight-info/{id}")
-    public String flightDetails(@PathVariable Long id, Model model) throws IOException, InterruptedException, URISyntaxException {
+    public String flightDetails(@AuthenticationPrincipal OidcUser user, @PathVariable Long id, Model model) throws IOException, InterruptedException, URISyntaxException {
+        boolean isLoggedIn = user != null;
         HttpRequest request = HttpRequest.newBuilder()
                 .uri(new URI("http://localhost:8081/flights/" + id))
                 .GET()
                 .build();
+
 
         HttpClient client = HttpClient.newHttpClient();
         HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
 
         ObjectMapper mapper = new ObjectMapper();
         Airline flight = mapper.readValue(response.body(), Airline.class);
+        System.out.println(response.body());
         model.addAttribute("flight", flight);
-        return "flight-info";
+        model.addAttribute("contentTemplate", "flight-info");
+        model.addAttribute("isLoggedIn", isLoggedIn);
+        return "layout";
     }
+
 
 
 

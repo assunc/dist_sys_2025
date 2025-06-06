@@ -2,66 +2,84 @@
 <html xmlns:th="http://www.thymeleaf.org">
 <div th:fragment="content">
 
-    <div th:if="${hotel}" class="hotel-details-card" th:object="${hotel}">
-        <h2 th:text="*{name}">Hotel Name Placeholder</h2>
-        <p class="hotel-location">
-            <span th:text="*{address}">123 Street Name</span>,
-            <span th:text="*{city}">City</span>,
-            <span th:text="*{country}">Country</span>
-        </p>
-        <p class="hotel-phone">
-            Phone: <span th:text="*{phoneNumber}">+1234567890</span>
-        </p>
-        <div class="hotel-description">
-            <h3>About this hotel</h3>
-            <p th:text="*{description}"></p>
+    <div th:if="${hotel}" class="hotel-details-card" th:object="${hotel}" style="max-width: 960px; margin: auto; padding: 24px;">
+        <div style="display: flex; justify-content: space-between; gap: 24px; flex-wrap: wrap;">
+            <div>
+                <h2 th:text="*{name}">Hotel Name Placeholder</h2>
+                <p class="hotel-location">
+                    <span th:text="*{address}">123 Street Name</span>,
+                    <span th:text="*{city}">City</span>,
+                    <span th:text="*{country}">Country</span>
+                </p>
+                <p class="hotel-phone">
+                    <i class="fas fa-phone"></i>
+                    <span th:text="*{phoneNumber}">+1234567890</span>
+                </p>
+            </div>
+            <div style="max-width: 450px;">
+                <h3>About this hotel</h3>
+                <p th:text="*{description}"></p>
+            </div>
         </div>
     </div>
 
-    <h2>Book a Room</h2>
-    <p>Search and reserve available rooms at this Hotel.</p>
+    <div style="max-width: 720px; margin: 0 auto; padding: 16px 0;">
 
-    <div class="container my-5">
-        <h3>Find Available Rooms</h3>
-        <form th:action="@{/hotel-info/{hotelId}(hotelId=${hotel.id})}" method="post" class="row g-3 align-items-end">
-            <div class="col-md-4">
-                <label for="startDate" class="form-label">Start Date:</label>
-                <input type="date" class="form-control" id="startDate" name="startDate" th:value="${#dates.format(startDate, 'yyyy-MM-dd')}" required>
-            </div>
-            <div class="col-md-4">
-                <label for="endDate" class="form-label">End Date:</label>
-                <input type="date" class="form-control" id="endDate" name="endDate" th:value="${#dates.format(endDate, 'yyyy-MM-dd')}" required>
-            </div>
-            <div class="col-md-2">
-                <label for="numberOfPeople" class="form-label">Number of People:</label>
-                <input type="number" class="form-control" id="numberOfPeople" name="numberOfPeople" min="1" th:value="${numberOfPeople != null ? numberOfPeople : 1}" required>
-            </div>
-            <div class="col-md-2">
-                <button type="submit" class="btn btn-primary w-100">Search</button>
-            </div>
-        </form>
+        <h2>Book a Room</h2>
+        <p>Search and reserve available rooms at this Hotel.</p>
 
-        <h4 class="mt-5">Available Rooms:</h4>
+        <div style="border: 1px solid #ddd; border-radius: 8px; padding: 16px; background-color: #fafafa;">
+            <h3 class="mb-3">Find Available Rooms</h3>
+            <form th:action="@{/hotel-info/{hotelId}(hotelId=${hotel.id})}" method="post" style="display: flex; flex-wrap: wrap; gap: 16px; align-items: end;">
+                <div>
+                    <label for="startDate" class="form-label">Start Date:</label><br>
+                    <input type="date" class="form-control" id="startDate" name="startDate" th:value="${#dates.format(startDate, 'yyyy-MM-dd')}" required>
+                </div>
+                <div>
+                    <label for="endDate" class="form-label">End Date:</label><br>
+                    <input type="date" class="form-control" id="endDate" name="endDate" th:value="${#dates.format(endDate, 'yyyy-MM-dd')}" required>
+                </div>
+                <div>
+                    <label for="numberOfPeople" class="form-label">Number of People:</label><br>
+                    <input type="number" class="form-control" id="numberOfPeople" name="numberOfPeople" min="1" th:value="${numberOfPeople != null ? numberOfPeople : 1}" required>
+                </div>
+                <div>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-search"></i> Search
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <h4 class="mt-5">Available Rooms</h4>
+
         <form th:action="@{/reservation}" method="post" class="mt-3">
             <div th:if="${error}" class="alert alert-danger" role="alert">
                 <p th:text="${error}"></p>
             </div>
-            <ul id="roomsList" class="list-group">
-                <li th:each="room : ${rooms}" class="list-group-item">
-                    <label th:for="${room.id}">
-                        Room Number: <span th:text="${room.number}"></span>,
-                        Capacity: <span th:text="${room.nOfPeople}"></span> people,
-                        Price: <span th:text="${room.price}"></span>€
-                    </label>
-                    <input type="checkbox" th:id="${room.id}" th:name="${room.id}">
 
-                </li>
-            </ul>
-            <p th:if="${searchPerformed and !hasRooms and !error}" class="text-muted">No rooms found for the selected criteria.</p>
-            <div class="col-md-2">
-                <button type="submit" class="btn btn-primary w-100">Reserve</button>
+            <div th:if="${searchPerformed}" class="d-flex flex-column gap-3 mt-3">
+                <div th:each="room : ${rooms}" style="border: 1px solid #ccc; border-radius: 8px; padding: 16px; display: flex; justify-content: space-between; align-items: center; background-color: #f9f9f9;">
+                    <div>
+                        <p><strong>Room <span th:text="${room.number}">101</span></strong></p>
+                        <p><i class="fas fa-user-friends"></i> Capacity: <span th:text="${room.nOfPeople}">2</span></p>
+                        <p><strong><i class="fas fa-euro-sign"></i> <span th:text="${room.price}">100</span></strong></p>
+                    </div>
+                    <input type="checkbox" th:id="${room.id}" th:name="${room.id}">
+                </div>
+            </div>
+
+            <p th:if="${searchPerformed and !hasRooms and !error}" class="text-muted mt-3">
+                No rooms found for the selected criteria.
+            </p>
+
+            <div th:if="${searchPerformed}" class="mt-4" style="max-width: 200px; margin-bottom: 80px;">
+                <button type="submit" class="btn btn-success w-100">
+                    <i class="fas fa-check"></i> Reserve
+                </button>
             </div>
         </form>
     </div>
+
 </div>
 </html>

@@ -1,46 +1,71 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org">
 <div th:fragment="content">
-    <h2>Book a Flight</h2>
 
-    <form th:action="@{/flights}" method="post" style="display: flex; align-items: center; gap: 8px; background-color: white; border: 2px solid #febb02; border-radius: 12px; padding: 12px; max-width: 1100px; margin: 0 auto 30px auto; box-shadow: 0 2px 6px rgba(0,0,0,0.1);">
-        <!-- FROM -->
-        <div style="display: flex; align-items: center; background-color: #f2f2f2; padding: 10px 12px; border-radius: 8px; flex: 1;">
-            <i class="fa-solid fa-plane-departure" style="margin-right: 8px; font-size: 18px; color: #555;"></i>
-            <input type="text" name="source" placeholder="From" style="border: none; background: transparent; outline: none; font-size: 16px; width: 100%;">
+    <div style="max-width: 960px; margin: 0 auto; padding: 24px;"> <!-- ✅ Centering wrapper -->
+
+        <h2>Book a Flight</h2>
+
+        <form th:action="@{/flights}" method="post" style="display: flex; align-items: center; gap: 8px; background-color: white; border: 2px solid #febb02; border-radius: 12px; padding: 12px; max-width: 100%; box-shadow: 0 2px 6px rgba(0,0,0,0.1);">
+            <!-- FROM -->
+            <div style="display: flex; align-items: center; background-color: #f2f2f2; padding: 10px 12px; border-radius: 8px; flex: 1;">
+                <i class="fa-solid fa-plane-departure" style="margin-right: 8px; font-size: 18px; color: #555;"></i>
+                <input type="text" name="source" placeholder="From" style="border: none; background: transparent; outline: none; font-size: 16px; width: 100%;">
+            </div>
+
+            <!-- SWAP BUTTON -->
+            <button type="button" style="background-color: white; border: 1px solid #ccc; border-radius: 8px; padding: 10px; cursor: pointer;">
+                <i class="fa-solid fa-right-left" style="font-size: 18px; color: #555;"></i>
+            </button>
+
+            <!-- TO -->
+            <div style="display: flex; align-items: center; background-color: #f2f2f2; padding: 10px 12px; border-radius: 8px; flex: 1;">
+                <i class="fa-solid fa-location-dot" style="margin-right: 8px; font-size: 18px; color: #555;"></i>
+                <input type="text" name="destination" placeholder="To" style="border: none; background: transparent; outline: none; font-size: 16px; width: 100%;">
+            </div>
+
+            <!-- DATE -->
+            <div style="display: flex; align-items: center; background-color: #f2f2f2; padding: 10px 12px; border-radius: 8px; flex: 1;">
+                <i class="fa-solid fa-calendar-days" style="margin-right: 8px; font-size: 18px; color: #555;"></i>
+                <input type="date" name="departure_time" style="border: none; background: white; outline: none; font-size: 16px; border-radius: 6px; padding: 6px; flex: 1;">
+            </div>
+
+            <!-- SEARCH BUTTON -->
+            <button type="submit" style="padding: 12px 24px; font-size: 16px; background-color: #0071c2; color: white; border: none; border-radius: 8px; cursor: pointer;">
+                Search
+            </button>
+        </form>
+
+        <!-- Flight Results as Cards -->
+        <h2 class="mt-5">Available Flights:</h2>
+        <div th:if="${flights}" class="mt-4" style="padding-bottom: 100px;">
+            <div th:each="flight : ${flights}" style="display: flex; gap: 16px; padding: 16px; border: 1px solid #ccc; border-radius: 12px; margin-bottom: 16px; box-shadow: 0 2px 6px rgba(0,0,0,0.05);">
+
+                <!-- Left: Optional Icon or Image -->
+                <div style="flex: 1; min-width: 150px;">
+                    <img src="/static/img/plane.jpg" alt="Flight image" style="width: 100%; height: 150px; object-fit: cover; border-radius: 8px;">
+                </div>
+
+                <!-- Right: Flight Info -->
+                <div style="flex: 3; display: flex; flex-direction: column; justify-content: space-between;">
+                    <!-- Top Info -->
+                    <div>
+                        <h4 th:text="${flight.source + ' → ' + flight.destination}" style="margin: 0; font-size: 20px;"></h4>
+                        <p style="color: #555; margin: 4px 0;" th:text="'Departure: ' + ${flight.departureTime}"></p>
+                        <p style="color: #555; margin: 4px 0;" th:text="'Arrival: ' + ${flight.arrivalTime}"></p>
+                        <p style="color: #777; font-size: 14px;" th:text="'Plane: ' + ${flight.planeModel}"></p>
+                    </div>
+
+                    <!-- Bottom Buttons -->
+                    <div style="margin-top: 12px;">
+                        <a th:href="@{'/flight-info/' + ${flight.flightNumber}}" class="btn btn-primary" style="padding: 8px 16px; font-size: 14px; text-decoration: none; color: white; background-color: #0071c2; border-radius: 6px;">
+                            View Details
+                        </a>
+                    </div>
+                </div>
+            </div>
         </div>
-
-        <!-- SWAP BUTTON -->
-        <button type="button" style="background-color: white; border: 1px solid #ccc; border-radius: 8px; padding: 10px; cursor: pointer;">
-            <i class="fa-solid fa-right-left" style="font-size: 18px; color: #555;"></i>
-        </button>
-
-        <!-- TO -->
-        <div style="display: flex; align-items: center; background-color: #f2f2f2; padding: 10px 12px; border-radius: 8px; flex: 1;">
-            <i class="fa-solid fa-location-dot" style="margin-right: 8px; font-size: 18px; color: #555;"></i>
-            <input type="text" name="destination" placeholder="To" style="border: none; background: transparent; outline: none; font-size: 16px; width: 100%;">
-        </div>
-
-        <!-- DATE -->
-        <div style="display: flex; align-items: center; background-color: #f2f2f2; padding: 10px 12px; border-radius: 8px; flex: 1;">
-            <i class="fa-solid fa-calendar-days" style="margin-right: 8px; font-size: 18px; color: #555;"></i>
-            <input type="date" name="departure_time" style="border: none; background: white; outline: none; font-size: 16px; border-radius: 6px; padding: 6px; flex: 1;">
-        </div>
-
-        <!-- SEARCH BUTTON -->
-        <button type="submit" style="padding: 12px 24px; font-size: 16px; background-color: #0071c2; color: white; border: none; border-radius: 8px; cursor: pointer;">
-            Search
-        </button>
-    </form>
-
-    <!-- Results -->
-    <h2>Flights</h2>
-    <ul>
-        <li th:each="flight : ${flights}">
-            <a th:href="@{'/flight-info/' + ${flight.flightNumber}}" th:text="${flight.source + ' to ' + flight.destination}"></a>
-        </li>
-    </ul>
-
+    </div> <!-- ✅ end of centered wrapper -->
 
 </div>
 </html>
