@@ -66,6 +66,7 @@ public class MenuEndpoint {
             hotelXml.setCountry(hotel.get().getCountry());
             hotelXml.setPhoneNumber(hotel.get().getPhoneNumber());
             hotelXml.setDescription(hotel.get().getDescription());
+            hotelXml.setImageUrl(hotel.get().getImageUrl());
             response.setHotel(hotelXml);
         }
 
@@ -111,6 +112,7 @@ public class MenuEndpoint {
                     hotelXml.setCountry(hotel.getCountry());
                     hotelXml.setPhoneNumber(hotel.getPhoneNumber());
                     hotelXml.setDescription(hotel.getDescription());
+                    hotelXml.setImageUrl(hotel.getImageUrl());
 
                     freeHotels.add(hotelXml);
                     break;

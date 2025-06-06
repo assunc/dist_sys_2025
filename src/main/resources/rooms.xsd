@@ -164,6 +164,7 @@
             <xs:element name="country" type="xs:string"/>
             <xs:element name="phoneNumber" type="xs:string"/>
             <xs:element name="description" type="xs:string"/>
+            <xs:element name="imageUrl" type="xs:string"/>
         </xs:sequence>
     </xs:complexType>
 
