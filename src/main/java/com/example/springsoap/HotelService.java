@@ -117,7 +117,8 @@ public class HotelService {
                         city,
                         country,
                         xpath.evaluate("ns2:phoneNumber", roomElement),
-                        xpath.evaluate("ns2:description", roomElement)
+                        xpath.evaluate("ns2:description", roomElement),
+                        xpath.evaluate("ns2:imageUrl", roomElement)
                 ));
             }
         }
@@ -150,7 +151,8 @@ public class HotelService {
                 xpath.evaluate("ns2:city", roomElement),
                 xpath.evaluate("ns2:country", roomElement),
                 xpath.evaluate("ns2:phoneNumber", roomElement),
-                xpath.evaluate("ns2:description", roomElement)
+                xpath.evaluate("ns2:description", roomElement),
+                xpath.evaluate("ns2:imageUrl", roomElement)
         );
     }
 
