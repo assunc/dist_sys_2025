@@ -1,0 +1,28 @@
+<div th:fragment="content">
+  <tr><th>Seat Type</th><td th:text="${classType}">N/A</td></tr>
+
+  <h2 class="mt-5">Available Seats:</h2>
+  <form id="seatForm" th:action="@{/payment-page-flight}" method="post">
+    <!-- Hidden JSON of all seats (outside the loop!) -->
+    <input type="hidden" name="allSeatsJson" th:value="${seatsJson}" />
+
+
+    <div th:if="${seats}" class="mt-4" style="padding-bottom: 100px;">
+      <div th:each="seat, iterStat : ${seats}"
+           style="display: flex; gap: 16px; padding: 16px; border: 1px solid #ccc; border-radius: 12px; margin-bottom: 16px; box-shadow: 0 2px 6px rgba(0,0,0,0.05); align-items: center;">
+
+        <input type="checkbox" name="selectedSeatIndices" th:value="${iterStat.index}" />
+
+
+        <div style="flex: 3;">
+          <h4 th:text="'Seat ' + ${seat.seatNumber}"></h4>
+        </div>
+      </div>
+    </div>
+S
+    <div style="text-align: center; margin-top: 20px;">
+      <button type="submit">Proceed to Payment</button>
+    </div>
+  </form>
+
+</div>
