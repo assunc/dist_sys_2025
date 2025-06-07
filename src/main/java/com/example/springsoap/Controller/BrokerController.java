@@ -217,15 +217,25 @@ public class BrokerController {
         ObjectMapper mapper = new ObjectMapper();
         List<Seat> seats = mapper.readValue(response.body(), new TypeReference<List<Seat>>() {});
 
-        // Serialize seats to JSON directly here:
         String seatsJson = mapper.writeValueAsString(seats);
+
+        HttpRequest flightRequest = HttpRequest.newBuilder()
+                .uri(new URI("http://localhost:8081/flights/" + flightNumber))
+                .GET()
+                .build();
+
+        HttpResponse<String> flightResponse = client.send(flightRequest, HttpResponse.BodyHandlers.ofString());
+        Airline flight = mapper.readValue(flightResponse.body(), Airline.class);
+
 
         model.addAttribute("classType", classType);
         model.addAttribute("flightNumber", flightNumber);
         model.addAttribute("seats", seats);
-        model.addAttribute("seatsJson", seatsJson); // Pass this to Thymeleaf
+        model.addAttribute("seatsJson", seatsJson);
+        model.addAttribute("flight", flight);
         model.addAttribute("isLoggedIn", user != null);
         model.addAttribute("contentTemplate", "flightBooking");
+
 
         return "layout";
     }

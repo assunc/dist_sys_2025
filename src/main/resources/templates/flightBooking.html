@@ -1,28 +1,116 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <title>Book Seats</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+</head>
+<body>
 <div th:fragment="content">
-  <tr><th>Seat Type</th><td th:text="${classType}">N/A</td></tr>
+  <style>
+    body {
+      font-family: sans-serif;
+      background-color: #f8f9fa;
+      margin: 0;
+      padding: 20px;
+    }
 
-  <h2 class="mt-5">Available Seats:</h2>
-  <form id="seatForm" th:action="@{/payment-page-flight}" method="post">
-    <!-- Hidden JSON of all seats (outside the loop!) -->
-    <input type="hidden" name="allSeatsJson" th:value="${seatsJson}" />
+    .booking-container {
+      max-width: 720px;
+      margin: auto;
+      background-color: #fff;
+      border-radius: 12px;
+      padding: 30px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.05);
+    }
 
+    h2 {
+      font-size: 1.75rem;
+      font-weight: 600;
+      margin-bottom: 1.5rem;
+    }
 
-    <div th:if="${seats}" class="mt-4" style="padding-bottom: 100px;">
-      <div th:each="seat, iterStat : ${seats}"
-           style="display: flex; gap: 16px; padding: 16px; border: 1px solid #ccc; border-radius: 12px; margin-bottom: 16px; box-shadow: 0 2px 6px rgba(0,0,0,0.05); align-items: center;">
+    .seat-card {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border: 1px solid #ddd;
+      padding: 16px;
+      border-radius: 10px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+      margin-bottom: 16px;
+    }
 
-        <input type="checkbox" name="selectedSeatIndices" th:value="${iterStat.index}" />
+    .seat-card label {
+      font-weight: 500;
+      color: #333;
+    }
 
+    .seat-card input[type="checkbox"] {
+      transform: scale(1.2);
+      accent-color: #0071c2;
+    }
 
-        <div style="flex: 3;">
-          <h4 th:text="'Seat ' + ${seat.seatNumber}"></h4>
+    .submit-btn {
+      display: block;
+      width: 100%;
+      margin-top: 24px;
+      padding: 12px;
+      background-color: #0071c2;
+      color: white;
+      font-weight: 600;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+
+    .submit-btn:hover {
+      background-color: #005fa3;
+    }
+
+    .back-link {
+      margin-top: 24px;
+      text-align: center;
+    }
+
+    .back-link a {
+      color: #0071c2;
+      text-decoration: none;
+    }
+
+    .back-link a:hover {
+      text-decoration: underline;
+    }
+
+    .subtitle {
+      color: #0071c2;
+      font-weight: 600;
+      margin-bottom: 16px;
+    }
+  </style>
+
+  <div class="booking-container">
+    <h2>Available Seats</h2>
+
+    <div class="subtitle" th:text="'Seat Type: ' + ${classType}">Seat Type: business</div>
+
+    <form id="seatForm" th:action="@{/payment-page-flight}" method="post">
+      <input type="hidden" name="allSeatsJson" th:value="${seatsJson}" />
+
+      <div th:if="${seats}">
+        <div th:each="seat, iterStat : ${seats}" class="seat-card">
+          <label th:for="'seat-' + ${seat.seatId}" th:text="'Seat ' + ${seat.seatNumber}">Seat 1A</label>
+          <input type="checkbox" th:id="'seat-' + ${seat.seatId}" name="selectedSeatIndices" th:value="${iterStat.index}" />
         </div>
       </div>
-    </div>
-S
-    <div style="text-align: center; margin-top: 20px;">
-      <button type="submit">Proceed to Payment</button>
-    </div>
-  </form>
 
+      <button class="submit-btn" type="submit">Continue to Payment</button>
+    </form>
+
+    <div class="back-link">
+      <a th:href="@{/flights}"><i class="fa fa-arrow-left"></i> Back to Flights</a>
+    </div>
+  </div>
 </div>
+</body>
+</html>

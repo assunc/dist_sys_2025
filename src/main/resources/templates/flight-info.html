@@ -1,66 +1,187 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Flight Details</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+</head>
+<body>
 <div th:fragment="content">
-    <div style="max-width: 720px; margin: 0 auto; padding: 24px;">
-        <div style="background: white; border-radius: 12px; padding: 24px; box-shadow: 0 2px 10px rgba(0,0,0,0.05);">
+    <style>
+        body {
+            font-family: sans-serif;
+            background-color: #f8f9fa;
+            margin: 0;
+            padding: 20px;
+        }
 
-            <h2 style="margin-top: 0; font-size: 24px; font-weight: 600; margin-bottom: 20px;">
-                Flight Details
-            </h2>
+        .details-container {
+            max-width: 720px;
+            margin: auto;
+            background-color: #fff;
+            border-radius: 12px;
+            padding: 30px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.05);
+        }
 
-            <!-- Info rows -->
-            <div style="margin-bottom: 12px;">
-                <div style="font-weight: 500; color: #333;">Flight Number</div>
-                <div th:text="${flight.flightNumber}" style="color: #555;"></div>
-            </div>
+        h2 {
+            font-size: 1.75rem;
+            font-weight: 600;
+            margin-bottom: 1.5rem;
+        }
 
-            <div style="margin-bottom: 12px;">
-                <div style="font-weight: 500; color: #333;">Plane Model</div>
-                <div th:text="${flight.planeModel}" style="color: #555;"></div>
-            </div>
+        .flight-summary {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #0071c2;
+            margin-bottom: 1.5rem;
+        }
 
-            <div style="margin-bottom: 12px;">
-                <div style="font-weight: 500; color: #333;">Source</div>
-                <div th:text="${flight.source}" style="color: #555;"></div>
-            </div>
+        .info-block {
+            margin-bottom: 16px;
+        }
 
-            <div style="margin-bottom: 12px;">
-                <div style="font-weight: 500; color: #333;">Destination</div>
-                <div th:text="${flight.destination}" style="color: #555;"></div>
-            </div>
+        .label {
+            font-weight: 500;
+            color: #333;
+            margin-bottom: 4px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
 
-            <div style="margin-bottom: 12px;">
-                <div style="font-weight: 500; color: #333;">Departure Time</div>
-                <div th:text="${flight.departureTime}" style="color: #555;"></div>
-            </div>
+        .label i {
+            color: #0071c2;
+        }
 
-            <div style="margin-bottom: 12px;">
-                <div style="font-weight: 500; color: #333;">Arrival Time</div>
-                <div th:text="${flight.arrivalTime}" style="color: #555;"></div>
-            </div>
+        .value {
+            color: #555;
+        }
 
-            <!-- Price section -->
-            <div style="margin-top: 24px;">
-                <div style="font-weight: 500; font-size: 18px; margin-bottom: 12px;">Prices</div>
+        .grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 24px;
+        }
 
-                <div style="margin-bottom: 8px;">
-                    <span style="color: #0071c2; font-weight: 500;">Economy:</span>
-                    <a th:href="@{'/book/economy/' + ${flight.flightNumber}}" th:text="'€' + ${flight.priceEconomy}" style="color: #0071c2; text-decoration: none; margin-left: 6px;"></a>
+        .prices {
+            margin-top: 30px;
+        }
+
+        .price-row {
+            margin-bottom: 10px;
+        }
+
+        .price-row span.label {
+            display: inline-block;
+            width: 90px;
+            font-weight: 500;
+            color: #0071c2;
+        }
+
+        .price-row a {
+            color: #0071c2;
+            text-decoration: none;
+            font-weight: 500;
+        }
+
+        .price-row a:hover {
+            text-decoration: underline;
+        }
+
+        .back-link {
+            margin-top: 24px;
+        }
+
+        .back-link a {
+            color: #0071c2;
+            text-decoration: none;
+            font-size: 0.95rem;
+        }
+
+        .back-link a:hover {
+            text-decoration: underline;
+        }
+
+        .divider {
+            height: 1px;
+            background: #ddd;
+            margin: 24px 0;
+        }
+    </style>
+
+    <div class="details-container">
+        <h2>Flight Details</h2>
+
+        <div class="flight-summary">
+            <i class="fa-solid fa-plane-departure"></i>
+            <span th:text="${flight.source} + ' → ' + ${flight.destination}">Brussels → Paris</span>
+        </div>
+
+        <div class="grid">
+            <div>
+                <div class="info-block">
+                    <div class="label"><i class="fa-regular fa-clock"></i>Departure</div>
+                    <div class="value" th:text="${flight.departureTime}">2025-06-10 10:00</div>
                 </div>
 
-                <div style="margin-bottom: 8px;">
-                    <span style="color: #0071c2; font-weight: 500;">Business:</span>
-                    <a th:href="@{'/book/business/' + ${flight.flightNumber}}" th:text="'€' + ${flight.priceBusiness}" style="color: #0071c2; text-decoration: none; margin-left: 6px;"></a>
+                <div class="info-block">
+                    <div class="label"><i class="fa-solid fa-location-dot"></i>Source</div>
+                    <div class="value" th:text="${flight.source}">Brussels</div>
+                </div>
+            </div>
+
+            <div>
+                <div class="info-block">
+                    <div class="label"><i class="fa-solid fa-clock-rotate-left"></i>Arrival</div>
+                    <div class="value" th:text="${flight.arrivalTime}">2025-06-10 11:30</div>
                 </div>
 
-                <div>
-                    <span style="color: #0071c2; font-weight: 500;">First:</span>
-                    <a th:href="@{'/book/first/' + ${flight.flightNumber}}" th:text="'€' + ${flight.priceFirst}" style="color: #0071c2; text-decoration: none; margin-left: 6px;"></a>
+                <div class="info-block">
+                    <div class="label"><i class="fa-solid fa-map-pin"></i>Destination</div>
+                    <div class="value" th:text="${flight.destination}">Paris</div>
                 </div>
             </div>
         </div>
 
-        <!-- Back link -->
-        <div style="margin-top: 20px;">
-            <a th:href="@{/flights}" style="color: #0071c2; text-decoration: none;">← Back to Flights</a>
+        <div class="divider"></div>
+
+        <div class="info-block">
+            <div class="label"><i class="fa-solid fa-plane"></i>Plane Model</div>
+            <div class="value" th:text="${flight.planeModel}">Airbus A320</div>
+        </div>
+
+        <div class="info-block">
+            <div class="label"><i class="fa-solid fa-hashtag"></i>Flight Number</div>
+            <div class="value" th:text="${flight.flightNumber}">1</div>
+        </div>
+
+        <div class="prices">
+            <div class="label" style="margin-bottom: 10px;">Prices</div>
+
+            <div class="price-row">
+                <span class="label">Economy:</span>
+                <a th:href="@{'/book/economy/' + ${flight.flightNumber}}" th:text="'€' + ${flight.priceEconomy}">€100.00</a>
+            </div>
+
+            <div class="price-row">
+                <span class="label">Business:</span>
+                <a th:href="@{'/book/business/' + ${flight.flightNumber}}" th:text="'€' + ${flight.priceBusiness}">€200.00</a>
+            </div>
+
+            <div class="price-row">
+                <span class="label">First:</span>
+                <a th:href="@{'/book/first/' + ${flight.flightNumber}}" th:text="'€' + ${flight.priceFirst}">€400.00</a>
+            </div>
+        </div>
+
+        <div class="back-link">
+            <a th:href="@{/flights}"><i class="fa fa-arrow-left"></i> Back to Flights</a>
         </div>
     </div>
 </div>
+</body>
+</html>

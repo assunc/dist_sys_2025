@@ -1,78 +1,237 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Flight Payment</title>
+</head>
+<body>
 <div th:fragment="content">
-    <h2>Payment Information</h2>
-    <p>Please provide your payment and billing details.</p>
+    <style>
+        body {
+            font-family: sans-serif;
+            background-color: #f8f9fa;
+            margin: 0;
+            padding: 20px;
+        }
 
-    <div th:if="${selectedSeats}" class="mt-4" style="padding-bottom: 100px;">
-        <div style="padding: 16px; border: 1px solid #ccc; border-radius: 12px; box-shadow: 0 2px 6px rgba(0,0,0,0.05);">
-            <h4 style="margin: 0 0 8px 0; font-size: 20px;">Your Selected Seats are:</h4>
-            <ul style="margin: 0; padding-left: 20px;">
-                <li th:each="seat : ${selectedSeats}" th:text="'Seat ' + ${seat.seatNumber}"></li>
-            </ul>
+        .grid-container {
+            display: grid;
+            grid-template-columns: 1fr 1.2fr;
+            gap: 30px;
+            max-width: 1100px;
+            margin: auto;
+        }
+
+        .reservation-summary,
+        .form-section {
+            background-color: #ffffff;
+            border-radius: 10px;
+            padding: 30px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.05);
+        }
+
+        h2 {
+            font-size: 1.75rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+        }
+
+        h4 {
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin-top: 1.5rem;
+            margin-bottom: 1rem;
+        }
+
+        h6 {
+            font-size: 1rem;
+            font-weight: 600;
+            margin-top: 1.5rem;
+            margin-bottom: 1rem;
+        }
+
+        p {
+            font-size: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        label {
+            font-weight: bold;
+            display: block;
+            margin-bottom: 5px;
+        }
+
+        input, select {
+            width: 100%;
+            padding: 10px;
+            border-radius: 6px;
+            border: 1px solid #ccc;
+            font-family: sans-serif;
+        }
+
+        button {
+            margin-top: 20px;
+            padding: 12px;
+            width: 100%;
+            background-color: #007bff;
+            border: none;
+            color: white;
+            font-weight: bold;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background-color: #0056b3;
+        }
+
+        .reservation-card {
+            border: 1px solid #ccc;
+            padding: 12px;
+            margin-bottom: 12px;
+            border-radius: 8px;
+        }
+
+        .row {
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+
+        .col-half {
+            flex: 1 1 48%;
+        }
+
+        .col-third {
+            flex: 1 1 30%;
+        }
+
+        .col-full {
+            flex: 1 1 100%;
+        }
+
+        hr {
+            border: none;
+            border-top: 1px solid #ccc;
+            margin: 20px 0;
+        }
+
+        @media (max-width: 900px) {
+            .grid-container {
+                grid-template-columns: 1fr;
+            }
+
+            .row {
+                flex-direction: column;
+            }
+        }
+
+        input:invalid,
+        select:invalid {
+            border: 2px solid #dc3545;
+            background-color: #fff5f5;
+        }
+
+        input:invalid:focus,
+        select:invalid:focus {
+            outline: none;
+            box-shadow: 0 0 4px rgba(220, 53, 69, 0.5);
+        }
+    </style>
+
+    <div class="grid-container">
+        <!-- Selected Seats Summary -->
+        <div class="reservation-summary">
+            <h4>Your Selected Seats</h4>
+            <div th:each="seat : ${selectedSeats}" class="reservation-card">
+                <p><strong>Seat</strong> <span th:text="${seat.seatNumber}">1A</span></p>
+            </div>
+        </div>
+
+        <!-- Payment Form -->
+        <div class="form-section">
+            <h2>Payment Information</h2>
+            <p>Please provide your payment and billing details.</p>
+
+            <form th:action="@{/final-payment}" method="post">
+                <!-- Hidden inputs to submit selected seats -->
+                <div th:each="seat : ${selectedSeats}">
+                    <input type="hidden" name="selectedSeatIds" th:value="${seat.seatId}" />
+                </div>
+
+                <h4>Card Details</h4>
+
+                <div class="form-group col-full">
+                    <label for="cardNumber">Card Number</label>
+                    <input type="text" id="cardNumber" name="cardNumber" placeholder="•••• •••• •••• ••••"
+                           required pattern="[0-9]{13,19}" title="Card number must be 13-19 digits.">
+                </div>
+
+                <div class="row">
+                    <div class="form-group col-half">
+                        <label for="expirationMonth">Expiration Month</label>
+                        <select id="expirationMonth" name="expirationMonth" required>
+                            <option value="">Month</option>
+                            <option th:each="i : ${#numbers.sequence(1, 12)}"
+                                    th:value="${#numbers.formatInteger(i, 2)}"
+                                    th:text="${#numbers.formatInteger(i, 2)}"></option>
+                        </select>
+                    </div>
+
+                    <div class="form-group col-half">
+                        <label for="expirationYear">Expiration Year</label>
+                        <select id="expirationYear" name="expirationYear" required>
+                            <option value="">Year</option>
+                            <option th:each="year : ${#numbers.sequence(#dates.year(#dates.createNow()), #dates.year(#dates.createNow()) + 10)}"
+                                    th:value="${year}" th:text="${year}"></option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-group col-third">
+                    <label for="cvc">CVC</label>
+                    <input type="text" id="cvc" name="cvc" placeholder="•••" required pattern="[0-9]{3,4}"
+                           title="CVC must be 3 or 4 digits.">
+                </div>
+
+                <hr>
+
+                <h4>Billing Address</h4>
+
+                <div class="form-group col-full">
+                    <label for="billingStreet">Street Address</label>
+                    <input type="text" id="billingStreet" name="billingStreet" th:value="${userAddress}"
+                           placeholder="123 Main St" required>
+                </div>
+
+                <div class="row">
+                    <div class="form-group col-half">
+                        <label for="billingCity">City</label>
+                        <input type="text" id="billingCity" name="billingCity" th:value="${userCity}"
+                               placeholder="Anytown" required>
+                    </div>
+
+                    <div class="form-group col-half">
+                        <label for="billingPostalCode">Postal Code</label>
+                        <input type="text" id="billingPostalCode" name="billingPostalCode" th:value="${userPostalCode}"
+                               placeholder="12345" required>
+                    </div>
+                </div>
+
+                <div class="form-group col-full">
+                    <label for="billingCountry">Country</label>
+                    <input type="text" id="billingCountry" name="billingCountry" th:value="${userCountry}"
+                           placeholder="USA" required>
+                </div>
+
+                <button type="submit">Complete Payment</button>
+            </form>
         </div>
     </div>
-
-    <div class="container my-5">
-        <form th:action="@{/final-payment}" method="post" class="row g-3">
-            <!-- Hidden inputs to send all selected seat IDs -->
-            <div th:each="seat : ${selectedSeats}">
-                <input type="hidden" name="selectedSeatIds" th:value="${seat.seatId}" />
-            </div>
-
-            <h4 class="mb-3">Card Details</h4>
-            <div class="col-md-12">
-                <label for="cardNumber" class="form-label">Card Number</label>
-                <input type="text" class="form-control" id="cardNumber" name="cardNumber" placeholder="•••• •••• •••• ••••" required pattern="[0-9]{13,19}" title="Card number must be 13-19 digits.">
-            </div>
-
-            <div class="col-md-6">
-                <label for="expirationMonth" class="form-label">Expiration Month</label>
-                <select class="form-select" id="expirationMonth" name="expirationMonth" required>
-                    <option value="">Month</option>
-                    <option th:each="i : ${#numbers.sequence(1, 12)}" th:value="${#numbers.formatInteger(i, 2)}" th:text="${#numbers.formatInteger(i, 2)}"></option>
-                </select>
-            </div>
-
-            <div class="col-md-6">
-                <label for="expirationYear" class="form-label">Expiration Year</label>
-                <select class="form-select" id="expirationYear" name="expirationYear" required>
-                    <option value="">Year</option>
-                    <option th:each="year : ${#numbers.sequence(#dates.year(#dates.createNow()), #dates.year(#dates.createNow()) + 10)}" th:value="${year}" th:text="${year}"></option>
-                </select>
-            </div>
-
-            <div class="col-md-4">
-                <label for="cvc" class="form-label">CVC</label>
-                <input type="text" class="form-control" id="cvc" name="cvc" placeholder="•••" required pattern="[0-9]{3,4}" title="CVC must be 3 or 4 digits.">
-            </div>
-
-            <hr class="my-4">
-
-            <h4 class="mb-3">Billing Address</h4>
-            <div class="col-md-12">
-                <label for="billingStreet" class="form-label">Street Address</label>
-                <input type="text" class="form-control" id="billingStreet" name="billingStreet" th:value="${userAddress}" placeholder="123 Main St" required>
-            </div>
-
-            <div class="col-md-6">
-                <label for="billingCity" class="form-label">City</label>
-                <input type="text" class="form-control" id="billingCity" name="billingCity" th:value="${userCity}" placeholder="Anytown" required>
-            </div>
-
-            <div class="col-md-6">
-                <label for="billingPostalCode" class="form-label">Postal Code</label>
-                <input type="text" class="form-control" id="billingPostalCode" name="billingPostalCode" th:value="${userPostalCode}" placeholder="12345" required>
-            </div>
-
-            <div class="col-md-12">
-                <label for="billingCountry" class="form-label">Country</label>
-                <input type="text" class="form-control" id="billingCountry" name="billingCountry" th:value="${userCountry}" placeholder="USA" required>
-            </div>
-
-            <hr class="my-4">
-
-            <div class="col-12">
-                <button class="btn btn-primary btn-lg w-100" type="submit">Complete Payment</button>
-            </div>
-        </form>
-    </div>
 </div>
+</body>
+</html>
