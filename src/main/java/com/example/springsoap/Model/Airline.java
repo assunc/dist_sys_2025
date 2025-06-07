@@ -20,6 +20,9 @@ public class Airline {
     private BigDecimal priceBusiness;
     private BigDecimal priceFirst;
 
+    @Transient
+    private String duration;
+
     // Getters and Setters
     public Integer getFlightNumber() {
         return flightNumber;
@@ -91,6 +94,14 @@ public class Airline {
 
     public void setPriceFirst(BigDecimal priceFirst) {
         this.priceFirst = priceFirst;
+    }
+
+    public String getDuration() {
+        return duration;
+    }
+
+    public void setDuration(String duration) {
+        this.duration = duration;
     }
 }
 

@@ -105,6 +105,17 @@ public class BrokerController {
 
         List<Airline> flights = mapper.readValue(json, new TypeReference<List<Airline>>() {});
 
+        for (Airline flight : flights) {
+            Duration duration = Duration.between(
+                    flight.getDepartureTime().toLocalDateTime(),
+                    flight.getArrivalTime().toLocalDateTime()
+            );
+            long hours = duration.toHours();
+            long minutes = duration.toMinutes() % 60;
+            flight.setDuration(String.format("%dh %02dm", hours, minutes));
+        }
+
+
         model.addAttribute("title", "Flights");
         model.addAttribute("flights", flights);
         model.addAttribute("isLoggedIn", isLoggedIn);
