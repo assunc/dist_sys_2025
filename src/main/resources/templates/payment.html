@@ -181,7 +181,7 @@
 
                 <div class="form-group col-full">
                     <label for="cardNumber">Card Number</label>
-                    <input type="text" id="cardNumber" name="cardNumber"
+                    <input type="text" id="cardNumber" name="cardNumber" th:value="${userCardNumber}"
                            placeholder="•••• •••• •••• ••••" required pattern="[0-9]{13,19}">
                 </div>
 
@@ -192,7 +192,9 @@
                             <option value="">Month</option>
                             <option th:each="i : ${#numbers.sequence(1, 12)}"
                                     th:value="${#numbers.formatInteger(i, 2)}"
-                                    th:text="${#numbers.formatInteger(i, 2)}"></option>
+                                    th:text="${#numbers.formatInteger(i, 2)}"
+                                    th:selected="${userExpirationMonth != null and #numbers.formatInteger(i, 2) == userExpirationMonth ? 'selected' : ''}">
+                            </option>
                         </select>
                     </div>
 
@@ -201,14 +203,14 @@
                         <select id="expirationYear" name="expirationYear" required>
                             <option value="">Year</option>
                             <option th:each="year : ${#numbers.sequence(#dates.year(#dates.createNow()), #dates.year(#dates.createNow()) + 10)}"
-                                    th:value="${year}" th:text="${year}"></option>
+                                    th:value="${year}" th:text="${year}" th:selected="${userExpirationYear != null and year == userExpirationYear ? 'selected' : ''}"></option>
                         </select>
                     </div>
                 </div>
 
                 <div class="form-group col-third">
                     <label for="cvc">CVC</label>
-                    <input type="text" id="cvc" name="cvc"
+                    <input type="text" id="cvc" name="cvc" th:value="${userCvc}"
                            placeholder="•••" required pattern="[0-9]{3,4}">
                 </div>
 
@@ -250,292 +252,3 @@
 
 </body>
 </html>
-
-
-
-
-
-
-<!--<div th:fragment="content">-->
-<!--    <style>-->
-<!--        .checkout-wrapper {-->
-<!--            display: flex;-->
-<!--            flex-wrap: wrap;-->
-<!--            gap: 30px;-->
-<!--            margin-top: 30px;-->
-<!--        }-->
-
-<!--        .checkout-left,-->
-<!--        .checkout-right {-->
-<!--            background: #fff;-->
-<!--            border-radius: 12px;-->
-<!--            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);-->
-<!--            padding: 25px;-->
-<!--        }-->
-
-<!--        .checkout-left {-->
-<!--            flex: 1 1 350px;-->
-<!--        }-->
-
-<!--        .checkout-right {-->
-<!--            flex: 2 1 600px;-->
-<!--        }-->
-
-<!--        .form-label {-->
-<!--            font-weight: 600;-->
-<!--        }-->
-
-<!--        .form-control,-->
-<!--        .form-select {-->
-<!--            border-radius: 6px;-->
-<!--            border: 1px solid #ccc;-->
-<!--        }-->
-
-<!--        .btn-primary {-->
-<!--            background-color: #007bff;-->
-<!--            border: none;-->
-<!--            font-weight: bold;-->
-<!--        }-->
-
-<!--        .btn-primary:hover {-->
-<!--            background-color: #0069d9;-->
-<!--        }-->
-
-<!--        .list-group-item {-->
-<!--            background: #f8f9fa;-->
-<!--            border: 1px solid #dee2e6;-->
-<!--            border-radius: 6px;-->
-<!--            margin-bottom: 12px;-->
-<!--            padding: 15px;-->
-<!--        }-->
-
-<!--        .text-primary {-->
-<!--            font-weight: bold;-->
-<!--        }-->
-
-<!--        hr {-->
-<!--            border-top: 1px solid #ddd;-->
-<!--        }-->
-
-<!--        @media (max-width: 768px) {-->
-<!--            .checkout-wrapper {-->
-<!--                flex-direction: column;-->
-<!--            }-->
-<!--        }-->
-<!--    </style>-->
-<!--    <div class="checkout-wrapper">-->
-
-<!--    <div class="col-md-5 col-lg-4 order-md-last">-->
-<!--        <h4 class="d-flex justify-content-between align-items-center mb-3">-->
-<!--        <span class="text-primary">Your Room Reservations</span>-->
-<!--    </h4>-->
-<!--        <ul class="list-group mb-3">-->
-<!--            <li class="list-group-item d-flex justify-content-between lh-sm" th:each="roomReservation : ${reservation.roomReservations}">-->
-<!--                <div>-->
-<!--                    <h6 class="my-0">Room <span th:text="${roomReservation.room.number}">[Room Number]</span>,-->
-<!--                        <span th:text="${roomReservation.hotelName}">[HotelName]</span>,-->
-<!--                        <strong><i class="fas fa-euro-sign"></i> <span th:text="${roomReservation.room.price}">100</span></strong>,-->
-<!--                    </h6>-->
-<!--                    <small class="text-muted">-->
-<!--                        Check-in: <span th:text="${#dates.format(roomReservation.startDate, 'dd MMMM yyyy')}">01 January 2023</span><br>-->
-<!--                        Check-out: <span th:text="${#dates.format(roomReservation.endDate, 'dd MMMM yyyy')}">03 January 2023</span>-->
-<!--                    </small>-->
-<!--                </div>-->
-<!--            </li>-->
-<!--        </ul>-->
-<!--    </div>-->
-
-<!--    <h2>Payment Information</h2>-->
-<!--    <p>Please provide your payment and billing details.</p>-->
-
-<!--    <div class="container my-5">-->
-<!--        <form th:action="@{/process-reservation}" method="post" class="row g-3">-->
-<!--            <h4 class="mb-3">Card Details</h4>-->
-<!--            <div class="col-md-12">-->
-<!--                <label for="cardNumber" class="form-label">Card Number</label>-->
-<!--                <input type="text" class="form-control" id="cardNumber" name="cardNumber" placeholder="•••• •••• •••• ••••" required pattern="[0-9]{13,19}" title="Card number must be 13-19 digits.">-->
-<!--            </div>-->
-
-<!--            <div class="col-md-6">-->
-<!--                <label for="expirationMonth" class="form-label">Expiration Month</label>-->
-<!--                <select class="form-select" id="expirationMonth" name="expirationMonth" required>-->
-<!--                    <option value="">Month</option>-->
-<!--                    <option th:each="i : ${#numbers.sequence(1, 12)}" th:value="${#numbers.formatInteger(i, 2)}" th:text="${#numbers.formatInteger(i, 2)}"></option>-->
-<!--                </select>-->
-<!--            </div>-->
-<!--            <div class="col-md-6">-->
-<!--                <label for="expirationYear" class="form-label">Expiration Year</label>-->
-<!--                <select class="form-select" id="expirationYear" name="expirationYear" required>-->
-<!--                    <option value="">Year</option>-->
-<!--                    <option th:each="year : ${#numbers.sequence(#dates.year(#dates.createNow()), #dates.year(#dates.createNow()) + 10)}" th:value="${year}" th:text="${year}"></option>-->
-<!--                </select>-->
-<!--            </div>-->
-
-<!--            <div class="col-md-4">-->
-<!--                <label for="cvc" class="form-label">CVC</label>-->
-<!--                <input type="text" class="form-control" id="cvc" name="cvc" placeholder="•••" required pattern="[0-9]{3,4}" title="CVC must be 3 or 4 digits.">-->
-<!--            </div>-->
-
-<!--            <hr class="my-4">-->
-
-<!--            <h4 class="mb-3">Billing Address</h4>-->
-<!--            <div class="col-md-12">-->
-<!--                <label for="billingStreet" class="form-label">Street Address</label>-->
-<!--                <input type="text" class="form-control" id="billingStreet" name="billingStreet" th:value="${userAddress}" placeholder="123 Main St" required>-->
-<!--            </div>-->
-
-<!--            <div class="col-md-6">-->
-<!--                <label for="billingCity" class="form-label">City</label>-->
-<!--                <input type="text" class="form-control" id="billingCity" name="billingCity" th:value="${userCity}" placeholder="Anytown" required>-->
-<!--            </div>-->
-
-<!--            <div class="col-md-6">-->
-<!--                <label for="billingPostalCode" class="form-label">Postal Code</label>-->
-<!--                <input type="text" class="form-control" id="billingPostalCode" name="billingPostalCode" th:value="${userPostalCode}" placeholder="12345" required>-->
-<!--            </div>-->
-
-<!--            <div class="col-md-12">-->
-<!--                <label for="billingCountry" class="form-label">Country</label>-->
-<!--                <input type="text" class="form-control" id="billingCountry" name="billingCountry" th:value="${userCountry}" placeholder="USA" required>-->
-<!--            </div>-->
-
-<!--            <hr class="my-4">-->
-
-<!--            <div class="col-12">-->
-<!--                <button class="btn btn-primary btn-lg w-100" type="submit">Complete Payment</button>-->
-<!--            </div>-->
-<!--        </form>-->
-<!--    </div>-->
-<!--</div>-->
-<!--</html>-->
-<!--<head>-->
-<!--    <meta charset="UTF-8">-->
-<!--    <title>Checkout</title>-->
-<!--</head>-->
-<!--<body>-->
-
-<!--<div th:fragment="content" >-->
-<!--&lt;!&ndash;   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">&ndash;&gt;-->
-<!--    <style>-->
-<!--        body {-->
-<!--            background-color: #f8f9fa;-->
-<!--        }-->
-<!--        .reservation-summary {-->
-<!--            background-color: #ffffff;-->
-<!--            border-radius: 10px;-->
-<!--            padding: 40px;-->
-<!--            box-shadow: 0 0 10px rgba(0,0,0,0.05);-->
-<!--        }-->
-<!--        .reservation-summary h4 {-->
-<!--            border-bottom: 1px solid #dee2e6;-->
-<!--            padding-bottom: 10px;-->
-<!--            margin-bottom: 20px;-->
-<!--        }-->
-<!--        .form-section {-->
-<!--            background-color: #ffffff;-->
-<!--            border-radius: 10px;-->
-<!--            padding: 30px;-->
-<!--            box-shadow: 0 0 10px rgba(0,0,0,0.05);-->
-<!--        }-->
-<!--    </style>-->
-
-<!--    <div class="container mt-5" >-->
-<!--        <div class="row g-5">-->
-<!--            &lt;!&ndash; Reservation Summary &ndash;&gt;-->
-<!--            <div class="col-md-5">-->
-<!--                <div class="reservation-summary">-->
-<!--                    <h4>Your Room Reservations</h4>-->
-<!--                    <div th:each="roomReservation : ${reservation.roomReservations}" class="mb-3 border rounded p-3">-->
-<!--                        <h6 class="fw-bold mb-1">-->
-<!--                            Room <span th:text="${roomReservation.room.number}">[Room Number]</span>,-->
-<!--                            <span th:text="${roomReservation.hotelName}">[HotelName]</span>-->
-<!--                        </h6>-->
-<!--                        <p class="mb-1">-->
-<!--                            <strong>€ <span th:text="${roomReservation.room.price}">100</span></strong>-->
-<!--                        </p>-->
-<!--                        <small class="text-muted">-->
-<!--                            Check-in:-->
-<!--                            <span th:text="${#dates.format(roomReservation.startDate, 'dd MMM yyyy')}">01 Jan 2023</span><br>-->
-<!--                            Check-out:-->
-<!--                            <span th:text="${#dates.format(roomReservation.endDate, 'dd MMM yyyy')}">03 Jan 2023</span>-->
-<!--                        </small>-->
-<!--                    </div>-->
-<!--                </div>-->
-<!--            </div>-->
-
-<!--            &lt;!&ndash; Payment Form &ndash;&gt;-->
-<!--            <div class="col-md-7">-->
-<!--                <div class="form-section">-->
-<!--                    <h2 class="mb-4">Payment Information</h2>-->
-<!--                    <p class="mb-4 text-muted">Please provide your payment and billing details.</p>-->
-
-<!--                    <form th:action="@{/process-reservation}" method="post" class="row g-3">-->
-<!--                        <h4 class="mb-3">Card Details</h4>-->
-<!--                        <div class="col-12">-->
-<!--                            <label for="cardNumber" class="form-label">Card Number</label>-->
-<!--                            <input type="text" class="form-control" id="cardNumber" name="cardNumber"-->
-<!--                                   placeholder="•••• •••• •••• ••••" required pattern="[0-9]{13,19}" title="Card number must be 13-19 digits.">-->
-<!--                        </div>-->
-
-<!--                        <div class="col-md-6">-->
-<!--                            <label for="expirationMonth" class="form-label">Expiration Month</label>-->
-<!--                            <select class="form-select" id="expirationMonth" name="expirationMonth" required>-->
-<!--                                <option value="">Month</option>-->
-<!--                                <option th:each="i : ${#numbers.sequence(1, 12)}"-->
-<!--                                        th:value="${#numbers.formatInteger(i, 2)}"-->
-<!--                                        th:text="${#numbers.formatInteger(i, 2)}"></option>-->
-<!--                            </select>-->
-<!--                        </div>-->
-
-<!--                        <div class="col-md-6">-->
-<!--                            <label for="expirationYear" class="form-label">Expiration Year</label>-->
-<!--                            <select class="form-select" id="expirationYear" name="expirationYear" required>-->
-<!--                                <option value="">Year</option>-->
-<!--                                <option th:each="year : ${#numbers.sequence(#dates.year(#dates.createNow()), #dates.year(#dates.createNow()) + 10)}"-->
-<!--                                        th:value="${year}" th:text="${year}"></option>-->
-<!--                            </select>-->
-<!--                        </div>-->
-
-<!--                        <div class="col-md-4">-->
-<!--                            <label for="cvc" class="form-label">CVC</label>-->
-<!--                            <input type="text" class="form-control" id="cvc" name="cvc"-->
-<!--                                   placeholder="•••" required pattern="[0-9]{3,4}" title="CVC must be 3 or 4 digits.">-->
-<!--                        </div>-->
-
-<!--                        <hr class="my-4">-->
-
-<!--                        <h4 class="mb-3">Billing Address</h4>-->
-<!--                        <div class="col-12">-->
-<!--                            <label for="billingStreet" class="form-label">Street Address</label>-->
-<!--                            <input type="text" class="form-control" id="billingStreet" name="billingStreet"-->
-<!--                                   th:value="${userAddress}" placeholder="123 Main St" required>-->
-<!--                        </div>-->
-<!--                        <div class="col-md-6">-->
-<!--                            <label for="billingCity" class="form-label">City</label>-->
-<!--                            <input type="text" class="form-control" id="billingCity" name="billingCity"-->
-<!--                                   th:value="${userCity}" placeholder="Anytown" required>-->
-<!--                        </div>-->
-<!--                        <div class="col-md-6">-->
-<!--                            <label for="billingPostalCode" class="form-label">Postal Code</label>-->
-<!--                            <input type="text" class="form-control" id="billingPostalCode" name="billingPostalCode"-->
-<!--                                   th:value="${userPostalCode}" placeholder="12345" required>-->
-<!--                        </div>-->
-<!--                        <div class="col-12">-->
-<!--                            <label for="billingCountry" class="form-label">Country</label>-->
-<!--                            <input type="text" class="form-control" id="billingCountry" name="billingCountry"-->
-<!--                                   th:value="${userCountry}" placeholder="USA" required>-->
-<!--                        </div>-->
-
-<!--                        <hr class="my-4">-->
-<!--                        <div class="col-12">-->
-<!--                            <button class="btn btn-primary btn-lg w-100" type="submit">Complete Payment</button>-->
-<!--                        </div>-->
-<!--                    </form>-->
-<!--                </div>-->
-<!--            </div>-->
-<!--        </div>-->
-<!--    </div>-->
-<!--</div>-->
-<!--</body>-->
-
-<!--</html>-->

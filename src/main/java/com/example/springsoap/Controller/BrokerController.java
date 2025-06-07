@@ -9,6 +9,7 @@ import com.example.springsoap.Repository.AirlineSupplierRepository;
 import com.example.springsoap.Repository.HotelOrderRepository;
 import com.example.springsoap.Repository.FlightOrderRepository;
 import com.example.springsoap.Repository.OrderRepository;
+import com.example.springsoap.Repository.UserRepository;
 import com.example.springsoap.UserService;
 import com.example.springsoap.HotelService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -32,6 +33,7 @@ public class BrokerController {
     private final HotelOrderRepository hotelOrderRepository;
     private final FlightOrderRepository flightOrderRepository;
     private final OrderRepository orderRepository;
+    private final UserRepository userRepository;
 
     private final Reservation reservation;
 
@@ -42,7 +44,7 @@ public class BrokerController {
             AirlineSupplierRepository airlineSupplierRepository,
             HotelOrderRepository hotelOrderRepository,
             FlightOrderRepository flightOrderRepository,
-            OrderRepository orderRepository
+            OrderRepository orderRepository, UserRepository userRepository
     ) {
         this.userService = userService;
         this.hotelService = hotelService;
@@ -51,6 +53,7 @@ public class BrokerController {
         this.hotelOrderRepository = hotelOrderRepository;
         this.flightOrderRepository = flightOrderRepository;
         this.orderRepository = orderRepository;
+        this.userRepository = userRepository;
     }
 
 
@@ -244,16 +247,37 @@ public class BrokerController {
         String userCity = null;
         String userPostalCode = null;
         String userCountry = null;
+        String userCardNumber = null;
+        String userExpirationMonth = null;
+        String userExpirationYear = null;
+        String userCvc = null;
         if (isLoggedIn) {
-            userAddress = "Rue du Marché aux Herbes 10";
-            userCity = "Leuven";
-            userPostalCode = "3000";
-            userCountry = "Belgium";
+            User userDb = userRepository.findByEmail(user.getEmail()).orElseThrow(() -> new RuntimeException("User not found in DB"));
+            String deliveryAddress = userDb.getDeliveryAddress();
+            String paymentInfo = userDb.getPaymentInfo();
+            if (!paymentInfo.isEmpty()) {
+                String[] paymentInfoSplit = paymentInfo.split("_");
+                userCardNumber = paymentInfoSplit[0];
+                userExpirationMonth = paymentInfoSplit[1];
+                userExpirationYear = paymentInfoSplit[2];
+                userCvc = paymentInfoSplit[3];
+            }
+            if (!deliveryAddress.isEmpty()) {
+                String[] deliveryAddressSplit = deliveryAddress.split("_");
+                userAddress = deliveryAddressSplit[0];
+                userCity = deliveryAddressSplit[1];
+                userPostalCode = deliveryAddressSplit[2];
+                userCountry = deliveryAddressSplit[3];
+            }
         }
         model.addAttribute("userAddress", userAddress);
         model.addAttribute("userCity", userCity);
         model.addAttribute("userPostalCode", userPostalCode);
         model.addAttribute("userCountry", userCountry);
+        model.addAttribute("userCardNumber", userCardNumber);
+        model.addAttribute("userExpirationMonth", userExpirationMonth);
+        model.addAttribute("userExpirationYear", userExpirationYear);
+        model.addAttribute("userCvc", userCvc);
 
         return "layout";
     }
@@ -499,20 +523,6 @@ public class BrokerController {
                 return "redirect:/manager/dashboard";
         }
 
-        return "layout";
-    }
-    @GetMapping("/profile")
-    public String profilePage(@AuthenticationPrincipal OidcUser user, Model model) {
-        model.addAttribute("isLoggedIn", user != null);
-
-        if (user != null) {
-            model.addAttribute("nickname", user.getAttribute("nickname"));
-            model.addAttribute("email", user.getEmail());
-            model.addAttribute("picture", user.getPicture());
-        }
-
-        model.addAttribute("title", "Profile");
-        model.addAttribute("contentTemplate", "profile");
         return "layout";
     }
 

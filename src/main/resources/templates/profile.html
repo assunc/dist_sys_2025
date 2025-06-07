@@ -1,34 +1,160 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org">
 <div th:fragment="content">
+  <style>
+    .profile-info-block {
+        display: flex;
+        gap: 20px;
+        align-items: center;
+        background: #f8f9fa;
+        padding: 20px;
+        border-radius: 12px;
+        box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+        margin-bottom: 20px; /* Add some space below it */
+    }
+
+    .profile-picture {
+        border-radius: 50%;
+        box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+    }
+
+    /* Horizontal Divider */
+    .profile-divider {
+        margin: 30px 0;
+        border: 0;
+        border-top: 1px solid #eee;
+    }
+
+    /* Common Section Styling */
+    .profile-section {
+        background: #ffffff;
+        padding: 20px;
+        border-radius: 12px;
+        box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+        margin-bottom: 20px; /* Space between sections */
+    }
+
+    .profile-section h3 {
+        margin-top: 0;
+        margin-bottom: 15px;
+        color: #333;
+        border-bottom: 1px solid #eee;
+        padding-bottom: 10px;
+    }
+
+    .profile-section p {
+        margin-bottom: 5px;
+    }
+
+    .profile-section p:last-child {
+        margin-bottom: 0;
+    }
+
+    /* Profile Buttons */
+    .profile-button {
+        background-color: #007bff; /* Primary blue */
+        color: white;
+        border: none;
+        padding: 10px 20px;
+        border-radius: 8px;
+        text-decoration: none;
+        font-size: 16px;
+        cursor: pointer;
+        transition: background-color 0.3s ease;
+        display: inline-block; /* For the <a> tag button */
+    }
+
+    .profile-button:hover {
+        background-color: #0056b3; /* Darker blue on hover */
+    }
+
+    .password-reset-button {
+        background-color: #dc3545; /* Red for destructive/cautionary action */
+    }
+
+    .password-reset-button:hover {
+        background-color: #c82333;
+    }
+
+    .primary-action-button {
+        background-color: #28a745; /* Green for main action */
+    }
+
+    .primary-action-button:hover {
+        background-color: #218838;
+    }
+
+    /* Message Styles */
+    .success-message {
+        color: green;
+        margin-top: 10px;
+        background-color: #d4edda;
+        border-color: #c3e6cb;
+        color: #155724;
+        padding: .75rem 1.25rem;
+        border-radius: .25rem;
+    }
+
+    .error-message {
+        color: red;
+        margin-top: 10px;
+        background-color: #f8d7da;
+        border-color: #f5c6cb;
+        color: #721c24;
+        padding: .75rem 1.25rem;
+        border-radius: .25rem;
+    }
+  </style>
   <h2 style="margin-bottom: 20px;">My Profile</h2>
 
-  <div style="display: flex; gap: 20px; align-items: center; background: #f8f9fa; padding: 20px; border-radius: 12px;">
-    <img th:src="${picture}" alt="Profile Picture" width="100" height="100" style="border-radius: 50%; box-shadow: 0 2px 6px rgba(0,0,0,0.1);">
+  <div class="profile-info-block">
+    <img th:src="${picture}" alt="Profile Picture" width="100" height="100" class="profile-picture">
     <div>
       <p><strong>Nickname:</strong> <span th:text="${nickname}">nickname</span></p>
       <p><strong>Email:</strong> <span th:text="${email}">email</span></p>
     </div>
   </div>
 
-<!--  <form th:action="@{/profile/update}" method="post" style="margin-top: 30px; background: #ffffff; padding: 20px; border-radius: 12px; box-shadow: 0 1px 4px rgba(0,0,0,0.05);">-->
-<!--    <h3>Update Profile</h3>-->
-<!--    <label style="display: block; margin-bottom: 10px;">-->
-<!--      New Nickname:-->
-<!--      <input type="text" name="nickname" placeholder="Enter new nickname" style="width: 100%; padding: 8px; border-radius: 6px; border: 1px solid #ccc; margin-top: 5px;"/>-->
-<!--    </label>-->
-
-<!--    <button type="submit" style="background-color: #007bff; color: white; border: none; padding: 10px 20px; border-radius: 8px;">Update Profile</button>-->
-<!--  </form>-->
-
   <form th:action="@{/profile/reset-password}" method="post" style="margin-top: 20px;">
     <input type="hidden" name="email" th:value="${email}" />
-    <button type="submit" style="background-color: #dc3545; color: white; border: none; padding: 10px 20px; border-radius: 8px;">Send Password Reset Email</button>
+    <button type="submit" class="profile-button password-reset-button">Send Password Reset Email</button>
   </form>
 
-  <!-- Optional message display -->
-<!--  <div th:if="${param.updated}" style="color: green; margin-top: 15px;">Profile updated successfully.</div>-->
-  <div th:if="${param.resetSent}" style="color: green; margin-top: 10px;">Password reset email sent.</div>
-  <div th:if="${param.error}" style="color: red; margin-top: 10px;">An error occurred. Please try again.</div>
+  <hr class="profile-divider">
+
+  <div class="profile-section">
+    <h3>Payment Information</h3>
+    <div th:if="${hasPaymentInfo}">
+      <p><strong>Card Number:</strong> <span th:text="${cardNumber.substring(0, 4) + ' **** **** ' + cardNumber.substring(cardNumber.length() - 4)}">**** **** **** 1234</span></p>
+      <p><strong>Expiration:</strong> <span th:text="${expirationMonth}">MM</span>/<span th:text="${expirationYear}">YYYY</span></p>
+    </div>
+    <div th:unless="${hasPaymentInfo}">
+      <p>No payment information saved.</p>
+    </div>
+  </div>
+
+  <hr class="profile-divider">
+
+  <div class="profile-section">
+    <h3>Delivery Address</h3>
+    <div th:if="${hasDeliveryAddress}">
+      <p><strong>Street:</strong> <span th:text="${deliveryStreet}">123 Main St</span></p>
+      <p><strong>City:</strong> <span th:text="${deliveryCity}">Springfield</span></p>
+      <p><strong>Postal Code:</strong> <span th:text="${deliveryPostal}">12345</span></p>
+      <p><strong>Country:</strong> <span th:text="${deliveryCountry}">USA</span></p>
+    </div>
+    <div th:unless="${hasDeliveryAddress}">
+      <p>No delivery address saved.</p>
+    </div>
+  </div>
+
+  <div style="margin-top: 30px; text-align: center;">
+    <a th:href="@{/profile/edit-details}" class="profile-button primary-action-button">Change Payment &amp; Delivery Info</a>
+  </div>
+
+
+  <div th:if="${param.resetSent}" class="success-message">Password reset email sent.</div>
+  <div th:if="${param.error}" class="error-message">An error occurred. Please try again.</div>
+  <div th:if="${param.detailsUpdated}" class="success-message">Details updated successfully.</div>
 </div>
 </html>

@@ -54,8 +54,9 @@ public class UserService {
             newUser.setAuth0Id(auth0Id);
             newUser.setEmail(email);
             newUser.setName(name);
-            User saved = userRepository.save(newUser);
+            newUser.setDeliveryAddress("");
+            newUser.setPaymentInfo("");
             //System.out.println("New user inserted: " + saved.getAuth0Id());
-            return saved;        }
+            return userRepository.save(newUser);        }
     }
 }

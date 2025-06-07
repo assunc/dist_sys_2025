@@ -17,6 +17,12 @@ public class User {
 
     private String name;
 
+    @Column(name = "payment_info")
+    private String paymentInfo;
+
+    @Column(name = "delivery_address")
+    private String deliveryAddress;
+
     public Integer getId() { return id; }
     public void setId(Integer id) { this.id = id; }
 
@@ -29,6 +35,22 @@ public class User {
     public String getName() { return name; }
     public void setName(String name) { this.name = name; }
 
+    public String getPaymentInfo() {
+        return paymentInfo;
+    }
+
+    public void setPaymentInfo(String paymentInfo) {
+        this.paymentInfo = paymentInfo;
+    }
+
+    public String getDeliveryAddress() {
+        return deliveryAddress;
+    }
+
+    public void setDeliveryAddress(String deliveryAddress) {
+        this.deliveryAddress = deliveryAddress;
+    }
+
     @Override
     public String toString() {
         return "User{" +
@@ -36,6 +58,8 @@ public class User {
                 ", auth0Id='" + auth0Id + '\'' +
                 ", email='" + email + '\'' +
                 ", name='" + name + '\'' +
+                ", paymentInfo='" + paymentInfo + '\'' +
+                ", deliveryAddress='" + deliveryAddress + '\'' +
                 '}';
     }
 }
