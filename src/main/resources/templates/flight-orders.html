@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <title>My Flight Orders</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background-color: #f4f6f9;
+      margin: 0;
+      padding: 20px;
+    }
+
+    .container {
+      max-width: 960px;
+      margin: auto;
+    }
+
+    h2 {
+      margin-bottom: 1.5rem;
+      color: #2c3e50;
+      text-align: center;
+    }
+
+    .flight-card {
+      background-color: #ffffff;
+      border-radius: 10px;
+      padding: 20px;
+      margin-bottom: 20px;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.06);
+      border-left: 5px solid #007bff;
+      transition: box-shadow 0.3s ease;
+    }
+
+    .flight-card:hover {
+      box-shadow: 0 6px 12px rgba(0, 0, 0, 0.12);
+    }
+
+    .flight-entry {
+      margin-bottom: 10px;
+    }
+
+    .label {
+      font-weight: bold;
+      color: #333;
+      display: inline-block;
+      width: 140px;
+    }
+
+    .value {
+      color: #444;
+    }
+
+    .cancel-button {
+      margin-top: 15px;
+      padding: 10px 18px;
+      background-color: #dc3545;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      font-weight: bold;
+      cursor: pointer;
+      transition: background-color 0.2s ease;
+    }
+
+    .cancel-button:hover {
+      background-color: #bd2130;
+    }
+  </style>
+</head>
+<body>
+<div th:fragment="content">
+  <div class="container">
+    <h2>Your Flight Bookings</h2>
+
+    <div th:if="${flightOrders.isEmpty()}">
+      <p style="text-align: center;">You have not made any flight reservations yet.</p>
+    </div>
+
+    <div th:each="flight : ${flightOrders}" class="flight-card">
+      <div class="flight-entry">
+        <span class="label">Flight:</span>
+        <span class="value" th:text="${flight.flightNumber}">N/A</span>
+      </div>
+      <div class="flight-entry">
+        <span class="label">Seat Number:</span>
+        <span class="value" th:text="${flight.seatNumber}">N/A</span>
+      </div>
+      <div class="flight-entry">
+        <span class="label">Booking ID:</span>
+        <span class="value" th:text="${flight.bookingId}">N/A</span>
+      </div>
+      <div>
+        <span class="label">Flight Time:</span>
+        <span class="value" th:text="${flight.status}"></span> <!-- or use a real field -->
+      </div>
+
+      <div class="flight-entry">
+        <span class="label">Status:</span>
+        <span class="value" th:text="${flight.status}">pending</span>
+      </div>
+
+      <!-- Cancel Button -->
+      <!-- Show cancel button only if the order is not cancelled -->
+      <div th:if="${flight.order.status != 'CANCELLED'}">
+        <form th:action="@{/cancel-order}" method="post">
+          <input type="hidden" name="flightOrderId" th:value="${flight.id}" />
+          <button type="submit" class="cancel-button">Cancel</button>
+        </form>
+      </div>
+
+
+    </div>
+  </div>
+</div>
+</body>
+</html>

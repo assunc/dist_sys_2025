@@ -81,8 +81,16 @@
 
     <div style="position: absolute; top: 20px; right: 20px;">
         <a th:if="${!isLoggedIn}" th:href="@{/oauth2/authorization/auth0}" id="login-button">Login</a>
-        <a th:if="${isLoggedIn}" th:href="@{/logout}" id="logout-button">Logout</a>
+
+        <div th:if="${isLoggedIn}">
+            <a th:href="@{/logout}" id="logout-button" style="margin-left: 10px;">Logout</a>
+            <a th:href="@{/my-flight-orders}"
+               style="margin-left: 10px; background-color: #007bff; padding: 8px 14px; border-radius: 4px; color: white; text-decoration: none;">
+                My Flight Orders
+            </a>
+        </div>
     </div>
+
 
 </header>
 

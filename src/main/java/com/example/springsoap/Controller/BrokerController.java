@@ -1,9 +1,15 @@
 package com.example.springsoap.Controller;
 
+import com.example.springsoap.Entities.FlightOrder;
+import com.example.springsoap.Entities.Order;
+import com.example.springsoap.Entities.User;
 import com.example.springsoap.Model.Airline;
 import com.example.springsoap.Model.Hotel;
 import com.example.springsoap.Model.Room;
 import com.example.springsoap.Model.Seat;
+import com.example.springsoap.Repository.FlightOrderRepository;
+import com.example.springsoap.Repository.OrderRepository;
+import com.example.springsoap.Repository.UserRepository;
 import com.example.springsoap.UserService;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -48,6 +54,13 @@ import java.util.stream.Collectors;
 
 @Controller
 public class BrokerController {
+    @Autowired
+    private OrderRepository orderRepository;
+    @Autowired
+    private FlightOrderRepository flightOrderRepository;
+    @Autowired
+    private UserRepository userRepository;
+
     private final UserService userService;
     private final RestTemplate restTemplate;
     private final XPath xpath;
@@ -263,41 +276,182 @@ public class BrokerController {
     @PostMapping("/final-payment")
     public String sendPayment(@AuthenticationPrincipal OidcUser user,
                               @RequestParam("selectedSeatIds") List<Integer> selectedSeatIds,
+                              @RequestParam("cardNumber") String cardNumber,
+                              @RequestParam("expirationMonth") int expirationMonth,
+                              @RequestParam("expirationYear") int expirationYear,
+                              @RequestParam("cvc") String cvc,
+                              @RequestParam("billingStreet") String billingStreet,
+                              @RequestParam("billingCity") String billingCity,
+                              @RequestParam("billingPostalCode") String billingPostalCode,
+                              @RequestParam("billingCountry") String billingCountry,
                               Model model) throws URISyntaxException, IOException, InterruptedException {
 
         HttpClient client = HttpClient.newHttpClient();
         List<String> responses = new ArrayList<>();
+        List<FlightOrder> flightOrders = new ArrayList<>();
+        ObjectMapper mapper = new ObjectMapper();
 
+        boolean isLoggedIn = user != null;
+
+        // STEP 1: Create and save broker-side Order
+        Order newOrder = new Order(
+                isLoggedIn ? userService.findOrCreateFromOidcUser(user) : null,
+                billingStreet + ", " + billingCity + ", " + billingPostalCode + ", " + billingCountry,
+                cardNumber + ", " + expirationMonth + "/" + expirationYear + ", " + cvc,
+                "pending"
+        );
+        orderRepository.save(newOrder);
+
+        // STEP 2: Loop over each seat and create bookings + flight orders
         for (Integer seatId : selectedSeatIds) {
-            HttpRequest request = HttpRequest.newBuilder()
+            // 2a. Reserve seat
+            HttpRequest reserveRequest = HttpRequest.newBuilder()
                     .uri(new URI("http://localhost:8081/seats/" + seatId + "/reserve"))
                     .PUT(HttpRequest.BodyPublishers.noBody())
                     .build();
-            HttpRequest request1 = HttpRequest.newBuilder()
+            HttpResponse<String> reserveResponse = client.send(reserveRequest, HttpResponse.BodyHandlers.ofString());
+
+            // 2b. Create booking
+            HttpRequest bookingRequest = HttpRequest.newBuilder()
                     .uri(new URI("http://localhost:8081/bookings?seatId=" + seatId + "&status=BOOKED"))
                     .POST(HttpRequest.BodyPublishers.noBody())
                     .build();
+            HttpResponse<String> bookingResponse = client.send(bookingRequest, HttpResponse.BodyHandlers.ofString());
 
-            HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
-            HttpResponse<String> response1 = client.send(request1, HttpResponse.BodyHandlers.ofString());
-            System.out.println("::::::::::::::::::::::::::::::::::::::::::");
-            System.out.println(response1.body());
-            responses.add("Seat " + seatId + ": " + response.body());
+            // 2c. Extract bookingId
+            JsonNode bookingJson = mapper.readTree(bookingResponse.body());
+            long bookingId = bookingJson.get("id").asLong();
+
+            // 2d. Get seat info from supplier
+            HttpRequest seatRequest = HttpRequest.newBuilder()
+                    .uri(new URI("http://localhost:8081/seats/" + seatId))
+                    .GET()
+                    .build();
+            HttpResponse<String> seatResponse = client.send(seatRequest, HttpResponse.BodyHandlers.ofString());
+            JsonNode seatJson = mapper.readTree(seatResponse.body());
+
+            String seatNumber = seatJson.get("seatNumber").asText();
+            long flightId = seatJson.get("flightNumber").asLong(); // adjust if field is nested
+
+            // 2e. Get flight info from supplier
+            HttpRequest flightRequest = HttpRequest.newBuilder()
+                    .uri(new URI("http://localhost:8081/flights/" + flightId))
+                    .GET()
+                    .build();
+            HttpResponse<String> flightResponse = client.send(flightRequest, HttpResponse.BodyHandlers.ofString());
+            JsonNode flightJson = mapper.readTree(flightResponse.body());
+
+            String source = flightJson.get("source").asText();
+            String destination = flightJson.get("destination").asText();
+            String flightCode = flightJson.get("flightNumber").asText(); // adjust field if needed
+
+            String formattedFlightNumber = source + "-" + destination + "-" + flightCode;
+
+            // 2f. Create FlightOrder
+            FlightOrder flightOrder = new FlightOrder();
+            flightOrder.setOrder(newOrder);
+            flightOrder.setSeatNumber(seatNumber);
+            flightOrder.setFlightNumber(formattedFlightNumber);
+            flightOrder.setBookingId(bookingId);
+            flightOrder.setStatus("booked");
+            flightOrder.setAirlineSupplier(null); // set later if needed
+
+            flightOrders.add(flightOrder);
+            responses.add("Seat " + seatNumber + " on " + formattedFlightNumber + " reserved. Booking ID: " + bookingId);
         }
 
+        // STEP 3: Save all flight orders
+        flightOrderRepository.saveAll(flightOrders);
 
-        System.out.println(responses);
+        // STEP 4: Prepare frontend
         model.addAttribute("reservationResponses", responses);
-        model.addAttribute("isLoggedIn", user != null);
+        model.addAttribute("isLoggedIn", isLoggedIn);
         model.addAttribute("contentTemplate", "final-payment");
         return "layout";
     }
 
+    @GetMapping("/my-flight-orders")
+    public String getUserFlightOrders(@AuthenticationPrincipal OidcUser oidcUser, Model model) throws IOException, InterruptedException, URISyntaxException {
+        if (oidcUser == null) return "redirect:/login";
 
+        String auth0Id = oidcUser.getSubject();
+        Optional<User> optionalUser = userRepository.findByAuth0Id(auth0Id);
+        if (optionalUser.isEmpty()) {
+            model.addAttribute("error", "User not found.");
+            return "error";
+        }
 
+        User currentUser = optionalUser.get();
+        List<Order> orders = orderRepository.findByUser(currentUser);
+        List<FlightOrder> allFlightOrders = flightOrderRepository.findByOrderIn(orders);
 
+        HttpClient client = HttpClient.newHttpClient();
+        ObjectMapper mapper = new ObjectMapper();
 
+        for (FlightOrder flight : allFlightOrders) {
+            String flightNum = flight.getFlightNumber();  // e.g., "BRU-NYC-001"
+            // You need to map this to flight ID (or parse it out) if it's not stored directly
 
+            // Assuming flight number is unique or convertible to ID:
+            HttpRequest req = HttpRequest.newBuilder()
+                    .uri(new URI("http://localhost:8081/flights/flightNumber/" + flightNum)) // or `/flights/{id}`
+                    .GET()
+                    .build();
+
+            HttpResponse<String> resp = client.send(req, HttpResponse.BodyHandlers.ofString());
+            if (resp.statusCode() == 200) {
+                JsonNode flightJson = mapper.readTree(resp.body());
+                String departureTime = flightJson.get("departureTime").asText(); // e.g., 2025-06-10T15:45:00
+                flight.setStatus(flight.getStatus() + " @ " + departureTime); // or setDepartureTime() if you added the field
+            }
+        }
+
+        model.addAttribute("orders", orders);
+        model.addAttribute("flightOrders", allFlightOrders);
+        model.addAttribute("isLoggedIn", true);
+        model.addAttribute("contentTemplate", "flight-orders");
+
+        return "layout";
+    }
+
+    @PostMapping("/cancel-order")
+    public String cancelFlightOrder(@RequestParam("flightOrderId") Integer flightOrderId,
+                                    @AuthenticationPrincipal OidcUser user,
+                                    Model model) throws IOException, InterruptedException, URISyntaxException {
+
+        Optional<FlightOrder> optionalFlightOrder = flightOrderRepository.findById(flightOrderId);
+        if (optionalFlightOrder.isEmpty()) {
+            model.addAttribute("error", "Flight order not found.");
+            return "error";
+        }
+
+        FlightOrder flightOrder = optionalFlightOrder.get();
+        long bookingId = flightOrder.getBookingId();
+
+        // Call supplier API to cancel booking
+        HttpClient client = HttpClient.newHttpClient();
+        HttpRequest request = HttpRequest.newBuilder()
+                .uri(new URI("http://localhost:8081/bookings/cancel?bookingId=" + bookingId))
+                .DELETE()
+                .build();
+
+        HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+
+        if (response.statusCode() == 200) {
+            // Update broker DB
+            flightOrder.setStatus("CANCELLED");
+            flightOrderRepository.save(flightOrder);
+
+            Order order = flightOrder.getOrder();
+            order.setStatus("CANCELLED");
+            orderRepository.save(order);
+
+            return "redirect:/my-flight-orders";
+        } else {
+            model.addAttribute("error", "Failed to cancel booking: " + response.body());
+            return "error";
+        }
+    }
 
 
 
