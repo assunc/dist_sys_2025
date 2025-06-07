@@ -37,8 +37,18 @@ public class UserService {
 
         if (existingUser.isPresent()) {
            // System.out.println("User already exists in DB.");
-
-            return existingUser.get();
+            User user = existingUser.get();
+            boolean changed = false;
+            if (!email.equals(user.getEmail())) {
+                user.setEmail(email);
+                changed = true;
+            }
+            if (!name.equals(user.getName())) {
+                user.setName(name);
+                changed = true;
+            }
+            return changed ? userRepository.save(user) : user;
+            //return existingUser.get();
         } else {
             User newUser = new User();
             newUser.setAuth0Id(auth0Id);

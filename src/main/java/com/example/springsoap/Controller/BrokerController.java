@@ -501,6 +501,21 @@ public class BrokerController {
 
         return "layout";
     }
+    @GetMapping("/profile")
+    public String profilePage(@AuthenticationPrincipal OidcUser user, Model model) {
+        model.addAttribute("isLoggedIn", user != null);
+
+        if (user != null) {
+            model.addAttribute("nickname", user.getAttribute("nickname"));
+            model.addAttribute("email", user.getEmail());
+            model.addAttribute("picture", user.getPicture());
+        }
+
+        model.addAttribute("title", "Profile");
+        model.addAttribute("contentTemplate", "profile");
+        return "layout";
+    }
+
 
     @GetMapping("/logged-out")
     public String loggedOut(@AuthenticationPrincipal OidcUser user, Model model) {

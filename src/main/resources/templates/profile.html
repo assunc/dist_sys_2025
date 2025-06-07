@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<div th:fragment="content">
+  <h2 style="margin-bottom: 20px;">My Profile</h2>
+
+  <div style="display: flex; gap: 20px; align-items: center; background: #f8f9fa; padding: 20px; border-radius: 12px;">
+    <img th:src="${picture}" alt="Profile Picture" width="100" height="100" style="border-radius: 50%; box-shadow: 0 2px 6px rgba(0,0,0,0.1);">
+    <div>
+      <p><strong>Nickname:</strong> <span th:text="${nickname}">nickname</span></p>
+      <p><strong>Email:</strong> <span th:text="${email}">email</span></p>
+    </div>
+  </div>
+
+<!--  <form th:action="@{/profile/update}" method="post" style="margin-top: 30px; background: #ffffff; padding: 20px; border-radius: 12px; box-shadow: 0 1px 4px rgba(0,0,0,0.05);">-->
+<!--    <h3>Update Profile</h3>-->
+<!--    <label style="display: block; margin-bottom: 10px;">-->
+<!--      New Nickname:-->
+<!--      <input type="text" name="nickname" placeholder="Enter new nickname" style="width: 100%; padding: 8px; border-radius: 6px; border: 1px solid #ccc; margin-top: 5px;"/>-->
+<!--    </label>-->
+
+<!--    <button type="submit" style="background-color: #007bff; color: white; border: none; padding: 10px 20px; border-radius: 8px;">Update Profile</button>-->
+<!--  </form>-->
+
+  <form th:action="@{/profile/reset-password}" method="post" style="margin-top: 20px;">
+    <input type="hidden" name="email" th:value="${email}" />
+    <button type="submit" style="background-color: #dc3545; color: white; border: none; padding: 10px 20px; border-radius: 8px;">Send Password Reset Email</button>
+  </form>
+
+  <!-- Optional message display -->
+<!--  <div th:if="${param.updated}" style="color: green; margin-top: 15px;">Profile updated successfully.</div>-->
+  <div th:if="${param.resetSent}" style="color: green; margin-top: 10px;">Password reset email sent.</div>
+  <div th:if="${param.error}" style="color: red; margin-top: 10px;">An error occurred. Please try again.</div>
+</div>
+</html>
