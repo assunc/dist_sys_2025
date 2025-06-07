@@ -9,12 +9,28 @@
             <tr><th>Destination</th><td th:text="${flight.destination}">N/A</td></tr>
             <tr><th>Departure Time</th><td th:text="${flight.departureTime}">N/A</td></tr>
             <tr><th>Arrival Time</th><td th:text="${flight.arrivalTime}">N/A</td></tr>
-            <tr><th>Price Economy</th><td>€<span th:text="${flight.priceEconomy}">N/A</span></td></tr>
-            <tr><th>Price Business</th><td>€<span th:text="${flight.priceBusiness}">N/A</span></td></tr>
-            <tr><th>Price First</th><td>€<span th:text="${flight.priceFirst}">N/A</span></td></tr>
+            <tr>
+                <th>Price Economy</th>
+                <td>
+                    €<a th:href="@{'/book/economy/' + ${flight.flightNumber}}" th:text="${flight.priceEconomy}">0.0</a>
+                </td>
+            </tr>
+            <tr>
+                <th>Price Business</th>
+                <td>
+                    €<a th:href="@{'/book/business/'+${flight.flightNumber}}" th:text="${flight.priceBusiness}">0.0</a>
+                </td>
+            </tr>
+            <tr>
+                <th>Price First</th>
+                <td>
+                    €<a th:href="@{'/book/first/' + ${flight.flightNumber}}" th:text="${flight.priceFirst}">0.0</a>
+                </td>
+            </tr>
+
+
         </table>
 
         <p style="margin-top: 20px;"><a th:href="@{/flights}">← Back to Flights</a></p>
     </div>
 </div>
-

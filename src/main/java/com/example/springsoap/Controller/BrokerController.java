@@ -3,7 +3,9 @@ package com.example.springsoap.Controller;
 import com.example.springsoap.Model.Airline;
 import com.example.springsoap.Model.Hotel;
 import com.example.springsoap.Model.Room;
+import com.example.springsoap.Model.Seat;
 import com.example.springsoap.UserService;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -13,14 +15,11 @@ import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.*;
 import org.springframework.security.oauth2.core.oidc.user.OidcUser;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.client.RestTemplate;
 
 import org.w3c.dom.Document;
@@ -45,6 +44,7 @@ import java.time.Instant;
 import java.util.*;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
+import java.util.stream.Collectors;
 
 @Controller
 public class BrokerController {
@@ -199,6 +199,80 @@ public class BrokerController {
         model.addAttribute("isLoggedIn", isLoggedIn);
         return "layout";
     }
+
+
+    @GetMapping("/book/{classType}/{flightNumber}")
+    public String bookSeat(@AuthenticationPrincipal OidcUser user,
+                           @PathVariable Seat.SeatClass classType,
+                           @PathVariable Long flightNumber,
+                           Model model) throws URISyntaxException, IOException, InterruptedException {
+        HttpRequest request = HttpRequest.newBuilder()
+                .uri(new URI("http://localhost:8081/seats/available?flightNumber=" + flightNumber + "&seatClass=" + classType))
+                .GET()
+                .build();
+
+        HttpClient client = HttpClient.newHttpClient();
+        HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+
+        ObjectMapper mapper = new ObjectMapper();
+        List<Seat> seats = mapper.readValue(response.body(), new TypeReference<List<Seat>>() {});
+
+        // Serialize seats to JSON directly here:
+        String seatsJson = mapper.writeValueAsString(seats);
+
+        model.addAttribute("classType", classType);
+        model.addAttribute("flightNumber", flightNumber);
+        model.addAttribute("seats", seats);
+        model.addAttribute("seatsJson", seatsJson); // Pass this to Thymeleaf
+        model.addAttribute("isLoggedIn", user != null);
+        model.addAttribute("contentTemplate", "flightBooking");
+
+        return "layout";
+    }
+
+
+    @PostMapping("/payment-page-flight")
+    public String showPaymentPage(
+            @AuthenticationPrincipal OidcUser user,
+            @RequestParam("allSeatsJson") String allSeatsJson,
+            @RequestParam("selectedSeatIndices") List<Integer> selectedIndices,
+            Model model) throws JsonProcessingException {
+
+        ObjectMapper mapper = new ObjectMapper();
+        List<Seat> allSeats = mapper.readValue(allSeatsJson, new TypeReference<List<Seat>>() {});
+        List<Seat> selectedSeats = selectedIndices.stream()
+                .map(allSeats::get)
+                .collect(Collectors.toList());
+
+        model.addAttribute("selectedSeats", selectedSeats);
+        model.addAttribute("isLoggedIn", user != null);
+        model.addAttribute("contentTemplate", "payment-page-flight");
+        return "layout";
+    }
+
+    @GetMapping("/final-payment")
+    public String sendPayment(@AuthenticationPrincipal OidcUser user,
+                              @RequestParam("seatId") int seatId,
+                              Model model) throws URISyntaxException, IOException, InterruptedException {
+
+
+        HttpRequest request = HttpRequest.newBuilder()
+                .uri(new URI("http://localhost:8081/seats/" + seatId + "/reserve"))
+                .PUT(HttpRequest.BodyPublishers.noBody())
+                .build();
+
+
+        HttpClient client = HttpClient.newHttpClient();
+        HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+        System.out.println(response.body());
+        System.out.println("..................................");
+        model.addAttribute("isLoggedIn", user != null);
+        model.addAttribute("contentTemplate", "final-payment");
+        return "layout";
+    }
+
+
+
 
 
 
