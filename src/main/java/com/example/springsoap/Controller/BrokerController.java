@@ -452,19 +452,44 @@ public class BrokerController {
         return "layout";
     }
     @GetMapping("/manager/orders/{type}")
-    public String viewAllOrders(@PathVariable String type,@AuthenticationPrincipal OidcUser user, Model model) {
+    public String viewAllOrders(@PathVariable String type,@AuthenticationPrincipal OidcUser user,         @RequestParam(value = "status", required = false) String status
+            ,Model model) {
         boolean isLoggedIn = user != null;
         model.addAttribute("isLoggedIn", isLoggedIn);
 
         model.addAttribute("title", "All " + type + " Orders");
+        if (status == null || status.isBlank() || status.equalsIgnoreCase("all")) {
+            status = null;
+        }
+        String finalStatus = status;
+
 
         switch (type.toLowerCase()) {
             case "hotel":
-                model.addAttribute("hotelOrders", hotelOrderRepository.findAll());
+                List<HotelOrder> allHotelOrders = hotelOrderRepository.findAll();
+                if (finalStatus != null && !finalStatus.isEmpty()) {
+                    allHotelOrders = allHotelOrders.stream()
+                            .filter(o -> o.getStatus().equalsIgnoreCase(finalStatus))
+                            .toList();
+                }
+
+                model.addAttribute("status", finalStatus); // keep track of selected filter
+               // model.addAttribute("hotelOrders", hotelOrderRepository.findAll());
+                model.addAttribute("hotelOrders", allHotelOrders);
                 model.addAttribute("contentTemplate", "manager-orders-hotel");
                 break;
             case "flight":
-                model.addAttribute("flightOrders", flightOrderRepository.findAll());
+                List<FlightOrder> allFlightOrders = flightOrderRepository.findAll();
+                if (finalStatus != null && !finalStatus.isEmpty()) {
+                    allFlightOrders = allFlightOrders.stream()
+                            .filter(o -> o.getStatus().equalsIgnoreCase(finalStatus))
+                            .toList();
+                }
+
+                model.addAttribute("status", finalStatus); // keep track of selected filter
+                model.addAttribute("flightOrders", allFlightOrders); // ✅ use filtered result
+
+                //model.addAttribute("flightOrders", flightOrderRepository.findAll());
                 model.addAttribute("contentTemplate", "manager-orders-flight");
                 break;
 //            case "combo":
