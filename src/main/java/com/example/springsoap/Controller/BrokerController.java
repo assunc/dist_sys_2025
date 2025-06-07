@@ -250,22 +250,34 @@ public class BrokerController {
         return "layout";
     }
 
-    @GetMapping("/final-payment")
+    @PostMapping("/final-payment")
     public String sendPayment(@AuthenticationPrincipal OidcUser user,
-                              @RequestParam("seatId") int seatId,
+                              @RequestParam("selectedSeatIds") List<Integer> selectedSeatIds,
                               Model model) throws URISyntaxException, IOException, InterruptedException {
 
-
-        HttpRequest request = HttpRequest.newBuilder()
-                .uri(new URI("http://localhost:8081/seats/" + seatId + "/reserve"))
-                .PUT(HttpRequest.BodyPublishers.noBody())
-                .build();
-
-
         HttpClient client = HttpClient.newHttpClient();
-        HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
-        System.out.println(response.body());
-        System.out.println("..................................");
+        List<String> responses = new ArrayList<>();
+
+        for (Integer seatId : selectedSeatIds) {
+            HttpRequest request = HttpRequest.newBuilder()
+                    .uri(new URI("http://localhost:8081/seats/" + seatId + "/reserve"))
+                    .PUT(HttpRequest.BodyPublishers.noBody())
+                    .build();
+            HttpRequest request1 = HttpRequest.newBuilder()
+                    .uri(new URI("http://localhost:8081/bookings?seatId=" + seatId + "&status=BOOKED"))
+                    .POST(HttpRequest.BodyPublishers.noBody())
+                    .build();
+
+            HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+            HttpResponse<String> response1 = client.send(request1, HttpResponse.BodyHandlers.ofString());
+            System.out.println("::::::::::::::::::::::::::::::::::::::::::");
+            System.out.println(response1.body());
+            responses.add("Seat " + seatId + ": " + response.body());
+        }
+
+
+        System.out.println(responses);
+        model.addAttribute("reservationResponses", responses);
         model.addAttribute("isLoggedIn", user != null);
         model.addAttribute("contentTemplate", "final-payment");
         return "layout";

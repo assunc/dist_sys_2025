@@ -3,8 +3,7 @@ package com.example.springsoap.Model;
 import jakarta.persistence.*;
 import java.math.BigDecimal;
 
-@Entity
-@Table(name = "seats")  // maps to "seats" table in the DB
+
 public class Seat {
 
     @Id
