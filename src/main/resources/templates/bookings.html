@@ -48,11 +48,35 @@
         }
 
         .status {
-            font-size: 14px;
-            margin-top: 10px;
-            font-weight: 600;
-            color: #444;
-        }
+      font-size: 14px;
+      margin-top: 10px;
+      font-weight: 600;
+<!--      color: #444;-->
+    }
+
+    .status-badge {
+      display: inline-block;
+      padding: 4px 10px;
+      border-radius: 12px;
+      font-size: 13px;
+      font-weight: 600;
+      text-transform: capitalize;
+    }
+
+    .status-booked {
+      background-color: #d4edda;
+      color: #155724;
+    }
+
+    .status-canceled {
+      background-color: #f8d7da;
+      color: #721c24;
+    }
+
+    .status-pending {
+      background-color: #fff3cd;
+      color: #856404;
+    }
 
         .cancel-button {
             margin-top: 15px;
@@ -97,8 +121,11 @@
                 <strong>Dates:</strong> <span th:text="${#temporals.format(order.startDate, 'dd MMMM yyyy')}"></span>
                 - <span th:text="${#temporals.format(order.endDate, 'dd MMMM yyyy')}"></span><br/>
             </p>
-            <p class="status">Status: <span th:text="${order.status}"></span></p>
-
+            <p class="status">
+                Status:
+                <span th:text="${order.status}"
+                      th:classappend="'status-badge status-' + ${order.status.toLowerCase()}">Status</span>
+            </p>
             <form th:action="@{/bookings/cancelHotel}" method="post">
                 <input type="hidden" name="hotelOrderId" th:value="${order.id}" />
                 <button type="submit" class="cancel-button" th:unless="${order.status == 'canceled'}">

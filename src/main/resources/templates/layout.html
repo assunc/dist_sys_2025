@@ -203,7 +203,9 @@
             </button>
             <div id="profileDropdown" class="dropdown-menu">
                 <a th:href="@{/profile}"><i class="fa-solid fa-user"></i> Profile</a>
-                <a th:href="@{/bookings}"><i class="fa-solid fa-calendar-check"></i> My Bookings</a>
+<!--                remove booking part for manager only user can see -->
+                <a th:if="${#authentication.principal.claims['https://travelbroker.com/role'] == 'user'}"
+                   th:href="@{/bookings}"><i class="fa-solid fa-calendar-check"></i> My Bookings</a>
                 <!-- 👇 Show Dashboard only if role is manager -->
                 <a th:if="${#authentication.principal.claims['https://travelbroker.com/role'] == 'manager'}"
                    th:href="@{/manager/dashboard}">
