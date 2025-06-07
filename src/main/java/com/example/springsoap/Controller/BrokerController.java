@@ -405,6 +405,7 @@ public class BrokerController {
 
     @PostMapping("/bookings/cancelHotel")
     public String cancelHotelBooking(@RequestParam("hotelOrderId") Integer hotelOrderId,
+                                     @RequestParam("prevPage") String prevPage,
                                      Model model, @AuthenticationPrincipal OidcUser user) {
         boolean isLoggedIn = (user != null);
         model.addAttribute("isLoggedIn", isLoggedIn);
@@ -421,7 +422,7 @@ public class BrokerController {
             }
         }
 
-        return "redirect:/bookings"; // Redirect back to the bookings page
+        return "redirect:/" + prevPage; // Redirect back to the previous page
     }
 
     @GetMapping("/combo")
@@ -447,13 +448,15 @@ public class BrokerController {
         model.addAttribute("flightOrders", latestFlightOrders);
         //model.addAttribute("comboOrders", latestComboOrders);
 
-
-
         return "layout";
     }
     @GetMapping("/manager/orders/{type}")
-    public String viewAllOrders(@PathVariable String type,@AuthenticationPrincipal OidcUser user,         @RequestParam(value = "status", required = false) String status
-            ,Model model) {
+    public String viewAllOrders(
+            @PathVariable String type,
+            @AuthenticationPrincipal OidcUser user,
+            @RequestParam(value = "status", required = false) String status,
+            Model model
+    ) {
         boolean isLoggedIn = user != null;
         model.addAttribute("isLoggedIn", isLoggedIn);
 
@@ -463,33 +466,29 @@ public class BrokerController {
         }
         String finalStatus = status;
 
-
         switch (type.toLowerCase()) {
             case "hotel":
                 List<HotelOrder> allHotelOrders = hotelOrderRepository.findAll();
-                if (finalStatus != null && !finalStatus.isEmpty()) {
+                if (finalStatus != null) {
                     allHotelOrders = allHotelOrders.stream()
                             .filter(o -> o.getStatus().equalsIgnoreCase(finalStatus))
                             .toList();
                 }
 
                 model.addAttribute("status", finalStatus); // keep track of selected filter
-               // model.addAttribute("hotelOrders", hotelOrderRepository.findAll());
                 model.addAttribute("hotelOrders", allHotelOrders);
                 model.addAttribute("contentTemplate", "manager-orders-hotel");
                 break;
             case "flight":
                 List<FlightOrder> allFlightOrders = flightOrderRepository.findAll();
-                if (finalStatus != null && !finalStatus.isEmpty()) {
+                if (finalStatus != null) {
                     allFlightOrders = allFlightOrders.stream()
                             .filter(o -> o.getStatus().equalsIgnoreCase(finalStatus))
                             .toList();
                 }
 
                 model.addAttribute("status", finalStatus); // keep track of selected filter
-                model.addAttribute("flightOrders", allFlightOrders); // ✅ use filtered result
-
-                //model.addAttribute("flightOrders", flightOrderRepository.findAll());
+                model.addAttribute("flightOrders", allFlightOrders); // use filtered result
                 model.addAttribute("contentTemplate", "manager-orders-flight");
                 break;
 //            case "combo":

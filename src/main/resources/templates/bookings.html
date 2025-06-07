@@ -128,6 +128,7 @@
             </p>
             <form th:action="@{/bookings/cancelHotel}" method="post">
                 <input type="hidden" name="hotelOrderId" th:value="${order.id}" />
+                <input type="hidden" name="prevPage" th:value="${'bookings'}"/>
                 <button type="submit" class="cancel-button" th:unless="${order.status == 'canceled'}">
                     Cancel Booking
                 </button>
