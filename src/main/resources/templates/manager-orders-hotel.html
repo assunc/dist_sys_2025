@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>All Hotel Orders</title>
+</head>
+<body>
+<div th:fragment="content">
+    <h2>All Hotel Orders</h2>
+
+    <div th:if="${hotelOrders.isEmpty()}" class="no-bookings">
+        <p>No hotel orders found.</p>
+    </div>
+
+    <div th:each="order : ${hotelOrders}" class="booking-item">
+        <h3>Order ID: <span th:text="${order.order.id}">N/A</span></h3>
+        <p class="details">
+            <strong>Hotel:</strong> <span th:text="${order.hotelName}">Hotel Name</span><br/>
+            <strong>Room:</strong> <span th:text="${order.roomNumber}">123</span><br/>
+            <strong>User:</strong> <span th:text="${order.order?.user?.name ?: 'Anonymous'}">User</span><br/>
+            <strong>Dates:</strong>
+            <span th:text="${#temporals.format(order.startDate, 'dd MMM yyyy')}"></span> -
+            <span th:text="${#temporals.format(order.endDate, 'dd MMM yyyy')}"></span>
+        </p>
+        <p class="status">Status: <span th:text="${order.status}">Status</span></p>
+
+<!--        <form th:action="@{/manager/cancelHotel}" method="post" th:if="${order.status != 'canceled'}">-->
+<!--            <input type="hidden" name="hotelOrderId" th:value="${order.id}"/>-->
+<!--            <button type="submit" class="cancel-button">Cancel Booking</button>-->
+<!--        </form>-->
+    </div>
+</div>
+</body>
+</html>
+
+</html>

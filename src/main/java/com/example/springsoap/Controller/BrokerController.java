@@ -13,6 +13,7 @@ import com.example.springsoap.UserService;
 import com.example.springsoap.HotelService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.security.oauth2.core.oidc.user.OidcUser;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -438,9 +439,44 @@ public class BrokerController {
         model.addAttribute("title", "Dashboard");
         model.addAttribute("contentTemplate", "dashboard");
 
+        List<HotelOrder> latestHotelOrders = hotelOrderRepository.findTop3ByOrderByStartDateDesc();
+        List<FlightOrder> latestFlightOrders = flightOrderRepository.findTop3ByOrderByIdDesc();
+        //List<Order> latestComboOrders = orderRepository.findTop2ByOrderByCreatedAtDesc(); // Combo logic
+
+        model.addAttribute("hotelOrders", latestHotelOrders);
+        model.addAttribute("flightOrders", latestFlightOrders);
+        //model.addAttribute("comboOrders", latestComboOrders);
+
+
+
         return "layout";
     }
+    @GetMapping("/manager/orders/{type}")
+    public String viewAllOrders(@PathVariable String type,@AuthenticationPrincipal OidcUser user, Model model) {
+        boolean isLoggedIn = user != null;
+        model.addAttribute("isLoggedIn", isLoggedIn);
 
+        model.addAttribute("title", "All " + type + " Orders");
+
+        switch (type.toLowerCase()) {
+            case "hotel":
+                model.addAttribute("hotelOrders", hotelOrderRepository.findAll());
+                model.addAttribute("contentTemplate", "manager-orders-hotel");
+                break;
+            case "flight":
+                model.addAttribute("flightOrders", flightOrderRepository.findAll());
+                model.addAttribute("contentTemplate", "manager-orders-flight");
+                break;
+//            case "combo":
+//                model.addAttribute("orders", orderRepository.findAll()); // Optional: filter combo-tagged ones
+//                model.addAttribute("contentTemplate", "manager-orders-combo");
+//                break;
+            default:
+                return "redirect:/manager/dashboard";
+        }
+
+        return "layout";
+    }
 
     @GetMapping("/logged-out")
     public String loggedOut(@AuthenticationPrincipal OidcUser user, Model model) {

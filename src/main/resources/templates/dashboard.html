@@ -2,9 +2,38 @@
 <html xmlns:th="http://www.thymeleaf.org">
 <div th:fragment="content">
   <h2>Manager Dashboard</h2>
-  <p>Welcome, <span th:text="${#authentication.principal.fullName}">Manager</span></p>
-  <p>This page is only visible to managers.</p>
+  <div style="display: flex; gap: 20px; justify-content: center; margin-top: 30px;">
+
+    <!-- Hotel Orders -->
+    <div style="flex: 1; border: 1px solid #ccc; border-radius: 8px; padding: 20px;">
+      <h3>Hotel Orders</h3>
+      <div th:each="order : ${hotelOrders}">
+        <p><strong>Hotel:</strong> <span th:text="${order.hotelName}"/> — <span th:text="${order.status}"/></p>
+      </div>
+      <a th:href="@{'/manager/orders/hotel'}" class="btn btn-link">See all</a>
+    </div>
+
+    <!-- Flight Orders -->
+    <div style="flex: 1; border: 1px solid #ccc; border-radius: 8px; padding: 20px;">
+      <h3>Flight Orders</h3>
+      <div th:each="order : ${flightOrders}">
+        <p><strong>Flight:</strong> <span th:text="${order.flightNumber}"/> — <span th:text="${order.status}"/></p>
+      </div>
+      <a th:href="@{'/manager/orders/flight'}" class="btn btn-link">See all</a>
+    </div>
+
+<!--    &lt;!&ndash; Combo Orders &ndash;&gt;-->
+<!--    <div style="flex: 1; border: 1px solid #ccc; border-radius: 8px; padding: 20px;">-->
+<!--      <h3>Combo Orders</h3>-->
+<!--      <div th:each="order : ${comboOrders}">-->
+<!--        <p><strong>Order ID:</strong> <span th:text="${order.id}"/> — <span th:text="${order.status}"/></p>-->
+<!--      </div>-->
+<!--      <a th:href="@{'/manager/orders/combo'}" class="btn btn-link">See all</a>-->
+<!--    </div>-->
+
+  </div>
 </div>
+
 
 </html>
 
