@@ -152,13 +152,12 @@
                   th:classappend="'status-badge status-' + ${order.status.toLowerCase()}">Status</span>
         </p>
 
-<!--        <form th:action="@{/manager/cancelHotel}" method="post" th:if="${order.status != 'canceled'}">-->
-<!--            <input type="hidden" name="hotelOrderId" th:value="${order.id}"/>-->
-<!--            <button type="submit" class="cancel-button">Cancel Booking</button>-->
-<!--        </form>-->
+        <form th:action="@{/bookings/cancelHotel}" method="post" th:if="${order.status != 'canceled'}">
+            <input type="hidden" name="hotelOrderId" th:value="${order.id}"/>
+            <input type="hidden" name="prevPage" th:value="${'manager/orders/hotel'}"/>
+            <button type="submit" class="cancel-button">Cancel Booking</button>
+        </form>
     </div>
 </div>
 </body>
-</html>
-
 </html>

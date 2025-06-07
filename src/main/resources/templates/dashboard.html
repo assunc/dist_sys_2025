@@ -127,12 +127,12 @@
     <div class="section-box">
       <h3>Hotel Orders</h3>
       <div th:each="order, stat : ${hotelOrders}" th:if="${stat.index} < 3" class="order-card">
-        <strong>Hotel:</strong> <span th:text="${order.hotelName}"/> <br/>
+        <strong>Hotel:</strong> <span th:text="${order.hotelName}"></span> <br/>
         <strong>Dates:</strong>
-        <span th:text="${#temporals.format(order.startDate, 'dd MMM')}"/> –
-        <span th:text="${#temporals.format(order.endDate, 'dd MMM')}"/><br/>
+        <span th:text="${#temporals.format(order.startDate, 'dd MMM')}"></span> –
+        <span th:text="${#temporals.format(order.endDate, 'dd MMM')}"></span><br/>
         <strong>Status:</strong>
-        <span th:text="${order.status}" th:classappend="'status-badge status-' + ${order.status.toLowerCase()}"/>
+        <span th:text="${order.status}" th:classappend="'status-badge status-' + ${order.status.toLowerCase()}"></span>
       </div>
       <a th:href="@{'/manager/orders/hotel'}" class="see-all-button">See all</a>
     </div>
@@ -141,10 +141,10 @@
     <div class="section-box">
       <h3>Flight Orders</h3>
       <div th:each="order, stat : ${flightOrders}" th:if="${stat.index} < 3" class="order-card">
-        <strong>Flight:</strong> <span th:text="${order.flightNumber}"/> <br/>
-        <strong>Seat:</strong> <span th:text="${order.seatNumber}"/> <br/>
+        <strong>Flight:</strong> <span th:text="${order.flightNumber}"></span> <br/>
+        <strong>Seat:</strong> <span th:text="${order.seatNumber}"></span> <br/>
         <strong>Status:</strong>
-        <span th:text="${order.status}" th:classappend="'status-badge status-' + ${order.status.toLowerCase()}"/>
+        <span th:text="${order.status}" th:classappend="'status-badge status-' + ${order.status.toLowerCase()}"></span>
       </div>
       <a th:href="@{'/manager/orders/flight'}" class="see-all-button">See all</a>
     </div>
