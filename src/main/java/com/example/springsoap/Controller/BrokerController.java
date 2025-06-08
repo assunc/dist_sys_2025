@@ -422,11 +422,11 @@ public class BrokerController {
 
         if (response.statusCode() == 200) {
 
-            flightOrder.setStatus("Cancelled");
+            flightOrder.setStatus("canceled");
             flightOrderRepository.save(flightOrder);
 
             Order order = flightOrder.getOrder();
-            order.setStatus("Cancelled");
+            order.setStatus("canceled");
             orderRepository.save(order);
 
             return "redirect:/manager/dashboard";

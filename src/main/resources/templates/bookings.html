@@ -153,7 +153,7 @@
                 <span th:text="${flight.status}"
                       th:classappend="'status-badge status-' + ${flight.status.toLowerCase()}">Status</span>
             </p>
-            <form th:action="@{/cancel-order}" method="post" th:if="${flight.status.toLowerCase() != 'cancelled'}">
+            <form th:action="@{/cancel-order}" method="post" th:if="${flight.status.toLowerCase() != 'canceled'}">
                 <input type="hidden" name="flightOrderId" th:value="${flight.id}" />
                 <button type="submit" class="cancel-button">Cancel Flight</button>
             </form>
