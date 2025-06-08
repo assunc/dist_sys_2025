@@ -168,7 +168,7 @@
             <h2>Payment Information</h2>
             <p>Please provide your payment and billing details.</p>
 
-            <form th:action="@{/final-payment}" method="post">
+            <form th:action="@{/process-reservation}" method="post">
                 <!-- Hidden inputs to submit selected seats -->
                 <div th:each="seat : ${selectedSeats}">
                     <input type="hidden" name="selectedSeatIds" th:value="${seat.seatId}" />

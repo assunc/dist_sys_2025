@@ -4,6 +4,7 @@ package com.example.springsoap.Controller;
 import com.example.springsoap.Entities.FlightOrder;
 import com.example.springsoap.Entities.Order;
 import com.example.springsoap.Entities.User;
+import com.example.springsoap.FlightService;
 import com.example.springsoap.Model.Airline;
 
 import com.example.springsoap.Entities.*;
@@ -75,6 +76,9 @@ public class BrokerController {
     private FlightOrderRepository flightOrderRepository;
     @Autowired
     private UserRepository userRepository;
+    @Autowired
+    private FlightService flightService;
+
 
     private final UserService userService;
     private final HotelService hotelService;
@@ -128,28 +132,7 @@ public class BrokerController {
     public String flights(@AuthenticationPrincipal OidcUser user, Model model) throws URISyntaxException, IOException, InterruptedException {
         boolean isLoggedIn = user != null;
 
-        HttpRequest request = HttpRequest.newBuilder()
-                .uri(new URI("http://dsg.centralindia.cloudapp.azure.com:8081/flights"))
-                .GET()
-                .build();
-
-        HttpClient client = HttpClient.newHttpClient();
-        HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
-        String json = response.body();
-
-        ObjectMapper mapper = new ObjectMapper();
-
-        List<Airline> flights = mapper.readValue(json, new TypeReference<List<Airline>>() {});
-
-        for (Airline flight : flights) {
-            Duration duration = Duration.between(
-                    flight.getDepartureTime().toLocalDateTime(),
-                    flight.getArrivalTime().toLocalDateTime()
-            );
-            long hours = duration.toHours();
-            long minutes = duration.toMinutes() % 60;
-            flight.setDuration(String.format("%dh %02dm", hours, minutes));
-        }
+        List<Airline> flights = flightService.getAllFlights();
 
 
         model.addAttribute("title", "Flights");
@@ -176,21 +159,7 @@ public class BrokerController {
         String encodedSource = URLEncoder.encode(source, StandardCharsets.UTF_8);
         String encodedDestination = URLEncoder.encode(destination, StandardCharsets.UTF_8);
         String encodedDate = URLEncoder.encode(dateStr, StandardCharsets.UTF_8);
-
-        String uri = "http://dsg.centralindia.cloudapp.azure.com:8081/flights/searchByDateAndRoute?source=" + encodedSource +
-                "&destination=" + encodedDestination + "&departureDate=" + encodedDate;
-
-        HttpRequest request = HttpRequest.newBuilder()
-                .uri(new URI(uri))
-                .GET()
-                .build();
-
-        HttpClient client = HttpClient.newHttpClient();
-        HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
-
-        ObjectMapper mapper = new ObjectMapper();
-        List<Airline> flights = mapper.readValue(response.body(),
-                new TypeReference<List<Airline>>() {});
+        List<Airline> flights = flightService.searchFlights(encodedSource, encodedDestination, encodedDate);
 
         model.addAttribute("isLoggedIn", isLoggedIn);
         model.addAttribute("flights", flights);
@@ -199,23 +168,11 @@ public class BrokerController {
         return "layout";
     }
 
-
-
     @GetMapping("/flight-info/{id}")
     public String flightDetails(@AuthenticationPrincipal OidcUser user, @PathVariable Long id, Model model) throws IOException, InterruptedException, URISyntaxException {
         boolean isLoggedIn = user != null;
-        HttpRequest request = HttpRequest.newBuilder()
-                .uri(new URI("http://dsg.centralindia.cloudapp.azure.com:8081/flights/" + id))
-                .GET()
-                .build();
 
-
-        HttpClient client = HttpClient.newHttpClient();
-        HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
-
-        ObjectMapper mapper = new ObjectMapper();
-        Airline flight = mapper.readValue(response.body(), Airline.class);
-        System.out.println(response.body());
+        Airline flight = flightService.getFlightById(id);
         model.addAttribute("flight", flight);
         model.addAttribute("contentTemplate", "flight-info");
         model.addAttribute("isLoggedIn", isLoggedIn);
@@ -228,27 +185,17 @@ public class BrokerController {
                            @PathVariable Seat.SeatClass classType,
                            @PathVariable Long flightNumber,
                            Model model) throws URISyntaxException, IOException, InterruptedException {
-        HttpRequest request = HttpRequest.newBuilder()
-                .uri(new URI("http://dsg.centralindia.cloudapp.azure.com:8081/seats/available?flightNumber=" + flightNumber + "&seatClass=" + classType))
-                .GET()
-                .build();
 
-        HttpClient client = HttpClient.newHttpClient();
-        HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+        // Fetch available seats
+        List<Seat> seats = flightService.getAvailableSeats(flightNumber, classType);
 
         ObjectMapper mapper = new ObjectMapper();
-        List<Seat> seats = mapper.readValue(response.body(), new TypeReference<List<Seat>>() {});
 
+        // Serialize seats to JSON
         String seatsJson = mapper.writeValueAsString(seats);
 
-        HttpRequest flightRequest = HttpRequest.newBuilder()
-                .uri(new URI("http://dsg.centralindia.cloudapp.azure.com:8081/flights/" + flightNumber))
-                .GET()
-                .build();
-
-        HttpResponse<String> flightResponse = client.send(flightRequest, HttpResponse.BodyHandlers.ofString());
-        Airline flight = mapper.readValue(flightResponse.body(), Airline.class);
-
+        // Fetch flight details
+        Airline flight = flightService.getFlightById(flightNumber);
 
         model.addAttribute("classType", classType);
         model.addAttribute("flightNumber", flightNumber);
@@ -258,9 +205,9 @@ public class BrokerController {
         model.addAttribute("isLoggedIn", user != null);
         model.addAttribute("contentTemplate", "flightBooking");
 
-
         return "layout";
     }
+
 
 
     @PostMapping("/payment-page-flight")
@@ -282,99 +229,10 @@ public class BrokerController {
         return "layout";
     }
 
-    @PostMapping("/final-payment")
-    public String sendPayment(@AuthenticationPrincipal OidcUser user,
-                              @RequestParam("selectedSeatIds") List<Integer> selectedSeatIds,
-                              @RequestParam("cardNumber") String cardNumber,
-                              @RequestParam("expirationMonth") int expirationMonth,
-                              @RequestParam("expirationYear") int expirationYear,
-                              @RequestParam("cvc") String cvc,
-                              @RequestParam("billingStreet") String billingStreet,
-                              @RequestParam("billingCity") String billingCity,
-                              @RequestParam("billingPostalCode") String billingPostalCode,
-                              @RequestParam("billingCountry") String billingCountry,
-                              Model model) throws URISyntaxException, IOException, InterruptedException {
-
-        HttpClient client = HttpClient.newHttpClient();
-        List<String> responses = new ArrayList<>();
-        List<FlightOrder> flightOrders = new ArrayList<>();
-        ObjectMapper mapper = new ObjectMapper();
-
-        boolean isLoggedIn = user != null;
-
-        Order newOrder = new Order(
-                isLoggedIn ? userService.findOrCreateFromOidcUser(user) : null,
-                billingStreet + ", " + billingCity + ", " + billingPostalCode + ", " + billingCountry,
-                cardNumber + ", " + expirationMonth + "/" + expirationYear + ", " + cvc,
-                "booked"
-        );
-        orderRepository.save(newOrder);
-
-        for (Integer seatId : selectedSeatIds) {
-            HttpRequest reserveRequest = HttpRequest.newBuilder()
-                    .uri(new URI("http://dsg.centralindia.cloudapp.azure.com:8081/seats/" + seatId + "/reserve"))
-                    .PUT(HttpRequest.BodyPublishers.noBody())
-                    .build();
-            HttpResponse<String> reserveResponse = client.send(reserveRequest, HttpResponse.BodyHandlers.ofString());
-
-            HttpRequest bookingRequest = HttpRequest.newBuilder()
-                    .uri(new URI("http://dsg.centralindia.cloudapp.azure.com:8081/bookings?seatId=" + seatId + "&status=booked"))
-                    .POST(HttpRequest.BodyPublishers.noBody())
-                    .build();
-            HttpResponse<String> bookingResponse = client.send(bookingRequest, HttpResponse.BodyHandlers.ofString());
-
-            JsonNode bookingJson = mapper.readTree(bookingResponse.body());
-            long bookingId = bookingJson.get("id").asLong();
-
-            HttpRequest seatRequest = HttpRequest.newBuilder()
-                    .uri(new URI("http://dsg.centralindia.cloudapp.azure.com:8081/seats/" + seatId))
-                    .GET()
-                    .build();
-            HttpResponse<String> seatResponse = client.send(seatRequest, HttpResponse.BodyHandlers.ofString());
-            JsonNode seatJson = mapper.readTree(seatResponse.body());
-
-            String seatNumber = seatJson.get("seatNumber").asText();
-            long flightId = seatJson.get("flightNumber").asLong();
-
-            HttpRequest flightRequest = HttpRequest.newBuilder()
-                    .uri(new URI("http://dsg.centralindia.cloudapp.azure.com:8081/flights/" + flightId))
-                    .GET()
-                    .build();
-            HttpResponse<String> flightResponse = client.send(flightRequest, HttpResponse.BodyHandlers.ofString());
-            JsonNode flightJson = mapper.readTree(flightResponse.body());
-
-            String source = flightJson.get("source").asText();
-            String destination = flightJson.get("destination").asText();
-            String flightCode = flightJson.get("flightNumber").asText();
-
-            String formattedFlightNumber = source + "-" + destination + "-" + flightCode;
-
-            FlightOrder flightOrder = new FlightOrder();
-            flightOrder.setOrder(newOrder);
-            flightOrder.setSeatNumber(seatNumber);
-            flightOrder.setFlightNumber(formattedFlightNumber);
-            flightOrder.setBookingId(bookingId);
-            flightOrder.setStatus("booked");
-            flightOrder.setAirlineSupplier(null);
-
-            flightOrders.add(flightOrder);
-            responses.add("Seat " + seatNumber + " on " + formattedFlightNumber + " reserved. Booking ID: " + bookingId);
-        }
-
-
-        flightOrderRepository.saveAll(flightOrders);
-
-
-        model.addAttribute("reservationResponses", responses);
-        model.addAttribute("isLoggedIn", isLoggedIn);
-        model.addAttribute("contentTemplate", "final-payment");
-        return "layout";
-    }
-
-
     @PostMapping("/cancel-order")
     public String cancelFlightOrder(@RequestParam("flightOrderId") Integer flightOrderId,
-                                    @AuthenticationPrincipal OidcUser user,@RequestParam("prevPage") String prevPage,
+                                    @AuthenticationPrincipal OidcUser user,
+                                    @RequestParam("prevPage") String prevPage,
                                     Model model) throws IOException, InterruptedException, URISyntaxException {
 
         Optional<FlightOrder> optionalFlightOrder = flightOrderRepository.findById(flightOrderId);
@@ -385,20 +243,10 @@ public class BrokerController {
 
         FlightOrder flightOrder = optionalFlightOrder.get();
         long bookingId = flightOrder.getBookingId();
-        System.out.println("...............................");
-        System.out.println(bookingId);
-        System.out.println("...............................");
-        // Call supplier API to cancel booking
-        HttpClient client = HttpClient.newHttpClient();
-        HttpRequest request = HttpRequest.newBuilder()
-                .uri(new URI("http://dsg.centralindia.cloudapp.azure.com:8081/bookings/cancel?bookingId=" + bookingId))
-                .DELETE()
-                .build();
 
-        HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+        boolean cancelSuccess = flightService.cancelBooking(bookingId);
 
-        if (response.statusCode() == 200) {
-
+        if (cancelSuccess) {
             flightOrder.setStatus("canceled");
             flightOrderRepository.save(flightOrder);
 
@@ -406,12 +254,13 @@ public class BrokerController {
             order.setStatus("canceled");
             orderRepository.save(order);
 
-            return "redirect:/" + prevPage; // Redirect back to the previous page
+            return "redirect:/" + prevPage;
         } else {
-            model.addAttribute("error", "Failed to cancel booking: " + response.body());
+            model.addAttribute("error", "Failed to cancel booking via supplier.");
             return "error";
         }
     }
+
 
 
 
@@ -625,6 +474,7 @@ public class BrokerController {
 
     @PostMapping("/process-reservation")
     public String processReservation(
+            @RequestParam(value = "selectedSeatIds", required = false) List<Integer> selectedSeatIds, // for flights
             @RequestParam("cardNumber") String cardNumber,
             @RequestParam("expirationMonth") int expirationMonth,
             @RequestParam("expirationYear") int expirationYear,
@@ -635,7 +485,7 @@ public class BrokerController {
             @RequestParam("billingCountry") String billingCountry,
             @AuthenticationPrincipal OidcUser user,
             Model model
-    ) {
+    ) throws URISyntaxException, IOException, InterruptedException {
         boolean isLoggedIn = user != null;
         model.addAttribute("isLoggedIn", isLoggedIn);
         model.addAttribute("title", "Process Reservation");
@@ -647,7 +497,7 @@ public class BrokerController {
                 isLoggedIn ? userService.findOrCreateFromOidcUser(user) : null,
                 billingStreet + ", " + billingCity + ", " + billingPostalCode + ", " + billingCountry,
                 cardNumber + ", " + expirationMonth + "/" + expirationYear + ", " + cvc,
-                "pending"
+                "booked"
         );
 
         List<HotelOrder> hotelOrders = new ArrayList<>();
@@ -669,8 +519,9 @@ public class BrokerController {
             }
         }
 
-        if (!reservation.getFlightReservations().isEmpty()) {
-            // add stage 1 of commit here
+        if (selectedSeatIds != null && !selectedSeatIds.isEmpty()) {
+            List<FlightOrder> bookedFlights = flightService.bookSeats(selectedSeatIds, newOrder);
+            flightOrders.addAll(bookedFlights);
         }
 
         // save stage 1 of commit
