@@ -298,7 +298,7 @@ public class BrokerController {
                 isLoggedIn ? userService.findOrCreateFromOidcUser(user) : null,
                 billingStreet + ", " + billingCity + ", " + billingPostalCode + ", " + billingCountry,
                 cardNumber + ", " + expirationMonth + "/" + expirationYear + ", " + cvc,
-                "pending"
+                "booked"
         );
         orderRepository.save(newOrder);
 
