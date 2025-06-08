@@ -791,7 +791,7 @@ public class BrokerController {
             for (FlightOrder flight : userFlightOrders) {
                 String flightNum = flight.getFlightNumber();
                 HttpRequest req = HttpRequest.newBuilder()
-                        .uri(new URI("http://localhost:8081/flights/flightNumber/" + flightNum))
+                        .uri(new URI("http://dsg.centralindia.cloudapp.azure.com:8081/flights/flightNumber/" + flightNum))
                         .GET()
                         .build();
                 HttpResponse<String> resp = client.send(req, HttpResponse.BodyHandlers.ofString());
