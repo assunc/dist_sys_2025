@@ -129,7 +129,7 @@ public class BrokerController {
         boolean isLoggedIn = user != null;
 
         HttpRequest request = HttpRequest.newBuilder()
-                .uri(new URI("http://localhost:8081/flights"))
+                .uri(new URI("http://dsg.centralindia.cloudapp.azure.com:8081/flights"))
                 .GET()
                 .build();
 
@@ -177,7 +177,7 @@ public class BrokerController {
         String encodedDestination = URLEncoder.encode(destination, StandardCharsets.UTF_8);
         String encodedDate = URLEncoder.encode(dateStr, StandardCharsets.UTF_8);
 
-        String uri = "http://localhost:8081/flights/searchByDateAndRoute?source=" + encodedSource +
+        String uri = "http://dsg.centralindia.cloudapp.azure.com:8081/flights/searchByDateAndRoute?source=" + encodedSource +
                 "&destination=" + encodedDestination + "&departureDate=" + encodedDate;
 
         HttpRequest request = HttpRequest.newBuilder()
@@ -220,7 +220,7 @@ public class BrokerController {
     public String flightDetails(@AuthenticationPrincipal OidcUser user, @PathVariable Long id, Model model) throws IOException, InterruptedException, URISyntaxException {
         boolean isLoggedIn = user != null;
         HttpRequest request = HttpRequest.newBuilder()
-                .uri(new URI("http://localhost:8081/flights/" + id))
+                .uri(new URI("http://dsg.centralindia.cloudapp.azure.com:8081/flights/" + id))
                 .GET()
                 .build();
 
@@ -244,7 +244,7 @@ public class BrokerController {
                            @PathVariable Long flightNumber,
                            Model model) throws URISyntaxException, IOException, InterruptedException {
         HttpRequest request = HttpRequest.newBuilder()
-                .uri(new URI("http://localhost:8081/seats/available?flightNumber=" + flightNumber + "&seatClass=" + classType))
+                .uri(new URI("http://dsg.centralindia.cloudapp.azure.com:8081/seats/available?flightNumber=" + flightNumber + "&seatClass=" + classType))
                 .GET()
                 .build();
 
@@ -257,7 +257,7 @@ public class BrokerController {
         String seatsJson = mapper.writeValueAsString(seats);
 
         HttpRequest flightRequest = HttpRequest.newBuilder()
-                .uri(new URI("http://localhost:8081/flights/" + flightNumber))
+                .uri(new URI("http://dsg.centralindia.cloudapp.azure.com:8081/flights/" + flightNumber))
                 .GET()
                 .build();
 
@@ -330,14 +330,14 @@ public class BrokerController {
         for (Integer seatId : selectedSeatIds) {
             // 2a. Reserve seat
             HttpRequest reserveRequest = HttpRequest.newBuilder()
-                    .uri(new URI("http://localhost:8081/seats/" + seatId + "/reserve"))
+                    .uri(new URI("http://dsg.centralindia.cloudapp.azure.com:8081/seats/" + seatId + "/reserve"))
                     .PUT(HttpRequest.BodyPublishers.noBody())
                     .build();
             HttpResponse<String> reserveResponse = client.send(reserveRequest, HttpResponse.BodyHandlers.ofString());
 
             // 2b. Create booking
             HttpRequest bookingRequest = HttpRequest.newBuilder()
-                    .uri(new URI("http://localhost:8081/bookings?seatId=" + seatId + "&status=BOOKED"))
+                    .uri(new URI("http://dsg.centralindia.cloudapp.azure.com:8081/bookings?seatId=" + seatId + "&status=BOOKED"))
                     .POST(HttpRequest.BodyPublishers.noBody())
                     .build();
             HttpResponse<String> bookingResponse = client.send(bookingRequest, HttpResponse.BodyHandlers.ofString());
@@ -348,7 +348,7 @@ public class BrokerController {
 
             // 2d. Get seat info from supplier
             HttpRequest seatRequest = HttpRequest.newBuilder()
-                    .uri(new URI("http://localhost:8081/seats/" + seatId))
+                    .uri(new URI("http://dsg.centralindia.cloudapp.azure.com:8081/seats/" + seatId))
                     .GET()
                     .build();
             HttpResponse<String> seatResponse = client.send(seatRequest, HttpResponse.BodyHandlers.ofString());
@@ -359,7 +359,7 @@ public class BrokerController {
 
             // 2e. Get flight info from supplier
             HttpRequest flightRequest = HttpRequest.newBuilder()
-                    .uri(new URI("http://localhost:8081/flights/" + flightId))
+                    .uri(new URI("http://dsg.centralindia.cloudapp.azure.com:8081/flights/" + flightId))
                     .GET()
                     .build();
             HttpResponse<String> flightResponse = client.send(flightRequest, HttpResponse.BodyHandlers.ofString());
@@ -408,26 +408,28 @@ public class BrokerController {
 
         FlightOrder flightOrder = optionalFlightOrder.get();
         long bookingId = flightOrder.getBookingId();
-
+        System.out.println("...............................");
+        System.out.println(bookingId);
+        System.out.println("...............................");
         // Call supplier API to cancel booking
         HttpClient client = HttpClient.newHttpClient();
         HttpRequest request = HttpRequest.newBuilder()
-                .uri(new URI("http://localhost:8081/bookings/cancel?bookingId=" + bookingId))
+                .uri(new URI("http://dsg.centralindia.cloudapp.azure.com:8081/bookings/cancel?bookingId=" + bookingId))
                 .DELETE()
                 .build();
 
         HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
 
         if (response.statusCode() == 200) {
-            // Update broker DB
-            flightOrder.setStatus("CANCELLED");
+
+            flightOrder.setStatus("Cancelled");
             flightOrderRepository.save(flightOrder);
 
             Order order = flightOrder.getOrder();
-            order.setStatus("CANCELLED");
+            order.setStatus("Cancelled");
             orderRepository.save(order);
 
-            return "redirect:/booking";
+            return "redirect:/manager/dashboard";
         } else {
             model.addAttribute("error", "Failed to cancel booking: " + response.body());
             return "error";
