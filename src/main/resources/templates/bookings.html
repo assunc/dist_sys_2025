@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>My Bookings</title>
+
+</head>
+<body>
+<div th:fragment="content">
+    <style>
+        body {
+            background-color: #f8f9fa;
+            font-family: "Segoe UI", Roboto, sans-serif;
+        }
+
+        h2 {
+            color: #333;
+            margin-bottom: 30px;
+        }
+
+        .no-bookings {
+            background-color: #ffffff;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.03);
+        }
+
+        .booking-item {
+            background-color: #ffffff;
+            border-left: 5px solid #007bff;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 1px 6px rgba(0, 0, 0, 0.05);
+        }
+
+        .booking-item h3 {
+            margin-top: 0;
+            font-size: 18px;
+            color: #007bff;
+        }
+
+        .details {
+            font-size: 14px;
+            color: #555;
+            margin-top: 10px;
+            line-height: 1.6;
+        }
+
+        .status {
+      font-size: 14px;
+      margin-top: 10px;
+      font-weight: 600;
+<!--      color: #444;-->
+    }
+
+    .status-badge {
+      display: inline-block;
+      padding: 4px 10px;
+      border-radius: 12px;
+      font-size: 13px;
+      font-weight: 600;
+      text-transform: capitalize;
+    }
+
+    .status-booked {
+      background-color: #d4edda;
+      color: #155724;
+    }
+
+    .status-canceled {
+      background-color: #f8d7da;
+      color: #721c24;
+    }
+
+    .status-pending {
+      background-color: #fff3cd;
+      color: #856404;
+    }
+
+        .cancel-button {
+            margin-top: 15px;
+            background-color: #dc3545;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: background-color 0.2s ease;
+        }
+
+        .cancel-button:hover {
+            background-color: #c82333;
+        }
+
+        a {
+            color: #007bff;
+            text-decoration: none;
+            font-weight: 500;
+        }
+
+        a:hover {
+            text-decoration: underline;
+        }
+    </style>
+
+    <h2>Your Hotel Bookings</h2>
+
+    <div th:if="${hotelOrders.isEmpty()}" class="no-bookings">
+        <p>You have no hotel bookings yet.</p>
+        <p>Ready to explore? <a href="/hotels">Book a new hotel!</a></p>
+    </div>
+
+    <div th:unless="${hotelOrders.isEmpty()}">
+        <div th:each="order : ${hotelOrders}" class="booking-item">
+            <h3>Order ID: <span th:text="${order.order != null ? order.order.id : 'N/A'}"></span></h3>
+            <p class="details">
+                <strong>Hotel:</strong> <span th:text="${order.hotelName}"></span><br/>
+                <strong>Room:</strong> <span th:text="${order.roomNumber}"></span><br/>
+                <strong>Dates:</strong> <span th:text="${#temporals.format(order.startDate, 'dd MMMM yyyy')}"></span>
+                - <span th:text="${#temporals.format(order.endDate, 'dd MMMM yyyy')}"></span><br/>
+            </p>
+            <p class="status">
+                Status:
+                <span th:text="${order.status}"
+                      th:classappend="'status-badge status-' + ${order.status.toLowerCase()}">Status</span>
+            </p>
+            <form th:action="@{/bookings/cancelHotel}" method="post">
+                <input type="hidden" name="hotelOrderId" th:value="${order.id}" />
+                <input type="hidden" name="prevPage" th:value="${'bookings'}"/>
+                <button type="submit" class="cancel-button" th:unless="${order.status == 'canceled'}">
+                    Cancel Booking
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+</body>
+</html>

@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<div th:fragment="content">
+  <style>
+  .edit-details-form .form-section {
+      margin-bottom: 25px; /* Spacing between form sections */
+  }
+
+  .form-instructions {
+      font-size: 0.9em;
+      color: #6c757d;
+      margin-bottom: 15px;
+  }
+
+  .cancel-button {
+      background-color: #6c757d; /* Gray for cancel */
+      margin-left: 15px;
+  }
+
+  .cancel-button:hover {
+      background-color: #5a6268;
+  }
+  </style>
+  <h2 style="margin-bottom: 20px;">Edit Profile Details</h2>
+
+  <form th:action="@{/profile/save-details}" method="post" class="edit-details-form">
+    <div class="form-section">
+      <h3>Payment Information</h3>
+      <p class="form-instructions">Update your credit card details.</p>
+      <div class="form-grid">
+        <div class="form-group-12">
+          <label for="cardNumber" class="form-label">Card Number</label>
+          <input type="text" class="form-control" id="cardNumber" name="cardNumber"
+                 th:value="${cardNumber}" placeholder="•••• •••• •••• ••••" required pattern="[0-9]{13,19}" title="Card number must be 13-19 digits.">
+        </div>
+
+        <div class="form-group-6">
+          <label for="expirationMonth" class="form-label">Expiration Month</label>
+          <select class="form-select" id="expirationMonth" name="expirationMonth" required>
+            <option value="">Month</option>
+            <option th:each="i : ${#numbers.sequence(1, 12)}"
+                    th:value="${#numbers.formatInteger(i, 2)}"
+                    th:text="${#numbers.formatInteger(i, 2)}"
+                    th:selected="${i == expirationMonth ? 'selected' : ''}">Month</option>
+          </select>
+        </div>
+
+        <div class="form-group-6">
+          <label for="expirationYear" class="form-label">Expiration Year</label>
+          <select class="form-select" id="expirationYear" name="expirationYear" required>
+            <option value="">Year</option>
+            <option th:each="year : ${#numbers.sequence(#dates.year(#dates.createNow()), #dates.year(#dates.createNow()) + 10)}"
+                    th:value="${year}" th:text="${year}"
+                    th:selected="${year == expirationYear ? 'selected' : ''}">Year</option>
+          </select>
+        </div>
+
+        <div class="form-group-4">
+          <label for="cvc" class="form-label">CVC</label>
+          <input type="text" class="form-control" id="cvc" name="cvc"
+                 placeholder="•••" required pattern="[0-9]{3,4}" title="CVC must be 3 or 4 digits.">
+        </div>
+      </div>
+    </div>
+
+    <hr class="profile-divider">
+
+    <div class="form-section">
+      <h3>Delivery Address</h3>
+      <p class="form-instructions">Your primary delivery address for bookings.</p>
+      <div class="form-grid">
+        <div class="form-group-12">
+          <label for="deliveryStreet" class="form-label">Street Address</label>
+          <input type="text" class="form-control" id="deliveryStreet" name="deliveryStreet"
+                 th:value="${deliveryStreet}" placeholder="123 Main St" required>
+        </div>
+        <div class="form-group-6">
+          <label for="deliveryCity" class="form-label">City</label>
+          <input type="text" class="form-control" id="deliveryCity" name="deliveryCity"
+                 th:value="${deliveryCity}" placeholder="Anytown" required>
+        </div>
+        <div class="form-group-6">
+          <label for="deliveryPostal" class="form-label">Postal Code</label>
+          <input type="text" class="form-control" id="deliveryPostal" name="deliveryPostal"
+                 th:value="${deliveryPostal}" placeholder="12345" required>
+        </div>
+        <div class="form-group-12">
+          <label for="deliveryCountry" class="form-label">Country</label>
+          <input type="text" class="form-control" id="deliveryCountry" name="deliveryCountry"
+                 th:value="${deliveryCountry}" placeholder="USA" required>
+        </div>
+      </div>
+    </div>
+
+    <hr class="profile-divider">
+
+    <div style="margin-top: 30px; text-align: center;">
+      <button type="submit" class="profile-button primary-action-button">Save Changes</button>
+      <a th:href="@{/profile}" class="profile-button cancel-button">Cancel</a>
+    </div>
+  </form>
+</div>
+</html>

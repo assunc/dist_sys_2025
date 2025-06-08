@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<div th:fragment="content">
+  <h2>My Bookings</h2>
+
+  <div>
+    <h3 th:text="${reservation.getRoomReservations().isEmpty() and reservation.getFlightReservations().isEmpty() ? 'Your shopping cart is empty.' : 'Your Current Reservations'}"></h3>
+    <div th:unless="${reservation.getRoomReservations().isEmpty() and reservation.getFlightReservations().isEmpty()}">
+      <div th:if="${!reservation.getRoomReservations().isEmpty()}">
+        <h4>Hotel Bookings</h4>
+        <ul style="list-style: none; padding: 0;">
+          <li th:each="roomRes : ${reservation.roomReservations}" style="border: 1px solid #ddd; margin-bottom: 10px; padding: 10px;">
+            <strong>Hotel:</strong> <span th:text="${roomRes.hotelName}"></span><br/>
+            <strong>Room Number:</strong> <span th:text="${roomRes.room.number}"></span><br/>
+            <strong>Check-in:</strong> <span th:text="${#dates.format(roomRes.startDate, 'dd MMMM yyyy')}"></span><br/>
+            <strong>Check-out:</strong> <span th:text="${#dates.format(roomRes.endDate, 'dd MMMM yyyy')}"></span><br/>
+          </li>
+        </ul>
+      </div>
+      <div th:unless="${!reservation.getRoomReservations().isEmpty()}">
+        <p>No hotel bookings in your cart.</p>
+      </div>
+
+
+      <div th:if="${!reservation.getFlightReservations().isEmpty()}">
+        <h4>Flight Bookings</h4>
+        <ul style="list-style: none; padding: 0;">
+          <li th:each="flightRes : ${reservation.flightReservations}" style="border: 1px solid #ddd; margin-bottom: 10px; padding: 10px;">
+            <strong>Flight Number:</strong> <span th:text="${flightRes.flightId}"></span><br/>
+            <strong>Seat:</strong> <span th:text="${flightRes.seatNumber}"></span><br/>
+<!--            <strong>Route:</strong> <span th:text="${flightRes.departureAirport}"></span> to <span th:text="${flightRes.arrivalAirport}"></span><br/>-->
+<!--            <strong>Departure Date:</strong> <span th:text="${flightRes.departureDate}"></span><br/>-->
+          </li>
+        </ul>
+      </div>
+      <div th:unless="${!reservation.getFlightReservations().isEmpty()}">
+        <p>No flight bookings in your cart.</p>
+      </div>
+
+      <div th:if="${!reservation.getRoomReservations().isEmpty() or !reservation.getFlightReservations().isEmpty()}" style="text-align: center; margin-top: 30px;">
+        <hr style="margin-top: 20px; margin-bottom: 20px;"/>
+        <form th:action="@{/payment}" method="post">
+          <button type="submit" class="button" style="padding: 12px 25px; background-color: #28a745; color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 1.1em; transition: background-color 0.3s ease;">
+            Proceed to Payment
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+</html>
