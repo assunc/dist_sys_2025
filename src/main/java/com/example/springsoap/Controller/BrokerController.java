@@ -394,49 +394,6 @@ public class BrokerController {
         return "layout";
     }
 
-    @GetMapping("/my-flight-orders")
-    public String getUserFlightOrders(@AuthenticationPrincipal OidcUser oidcUser, Model model) throws IOException, InterruptedException, URISyntaxException {
-        if (oidcUser == null) return "redirect:/login";
-
-        String auth0Id = oidcUser.getSubject();
-        Optional<User> optionalUser = userRepository.findByAuth0Id(auth0Id);
-        if (optionalUser.isEmpty()) {
-            model.addAttribute("error", "User not found.");
-            return "error";
-        }
-
-        User currentUser = optionalUser.get();
-        List<Order> orders = orderRepository.findByUser(currentUser);
-        List<FlightOrder> allFlightOrders = flightOrderRepository.findByOrderIn(orders);
-
-        HttpClient client = HttpClient.newHttpClient();
-        ObjectMapper mapper = new ObjectMapper();
-
-        for (FlightOrder flight : allFlightOrders) {
-            String flightNum = flight.getFlightNumber();  // e.g., "BRU-NYC-001"
-            // You need to map this to flight ID (or parse it out) if it's not stored directly
-
-            // Assuming flight number is unique or convertible to ID:
-            HttpRequest req = HttpRequest.newBuilder()
-                    .uri(new URI("http://localhost:8081/flights/flightNumber/" + flightNum)) // or `/flights/{id}`
-                    .GET()
-                    .build();
-
-            HttpResponse<String> resp = client.send(req, HttpResponse.BodyHandlers.ofString());
-            if (resp.statusCode() == 200) {
-                JsonNode flightJson = mapper.readTree(resp.body());
-                String departureTime = flightJson.get("departureTime").asText(); // e.g., 2025-06-10T15:45:00
-                flight.setStatus(flight.getStatus() + " @ " + departureTime); // or setDepartureTime() if you added the field
-            }
-        }
-
-        model.addAttribute("orders", orders);
-        model.addAttribute("flightOrders", allFlightOrders);
-        model.addAttribute("isLoggedIn", true);
-        model.addAttribute("contentTemplate", "flight-orders");
-
-        return "layout";
-    }
 
     @PostMapping("/cancel-order")
     public String cancelFlightOrder(@RequestParam("flightOrderId") Integer flightOrderId,
@@ -470,7 +427,7 @@ public class BrokerController {
             order.setStatus("CANCELLED");
             orderRepository.save(order);
 
-            return "redirect:/my-flight-orders";
+            return "redirect:/booking";
         } else {
             model.addAttribute("error", "Failed to cancel booking: " + response.body());
             return "error";
@@ -806,7 +763,7 @@ public class BrokerController {
     }
 
     @GetMapping("/bookings")
-    public String viewBookings(Model model, @AuthenticationPrincipal OidcUser user) {
+    public String viewBookings(Model model, @AuthenticationPrincipal OidcUser user) throws IOException, InterruptedException, URISyntaxException {
         boolean isLoggedIn = (user != null);
         model.addAttribute("isLoggedIn", isLoggedIn);
         model.addAttribute("title", "My Bookings");
@@ -814,23 +771,44 @@ public class BrokerController {
 
         if (isLoggedIn) {
             User currentUser = userService.findOrCreateFromOidcUser(user);
+            List<Order> userOrders = orderRepository.findByUser(currentUser);
 
-            // Fetch hotel orders associated with this user's orders
+            // ✅ Hotel Orders
             List<HotelOrder> userHotelOrders = new ArrayList<>();
-            for (Order order : orderRepository.findByUser(currentUser)) {
+            for (Order order : userOrders) {
                 userHotelOrders.addAll(hotelOrderRepository.findByOrder(order));
             }
-
-            // Sort the list chronologically by start date
             userHotelOrders.sort(Comparator.comparing(HotelOrder::getStartDate));
-
             model.addAttribute("hotelOrders", userHotelOrders);
+
+            // ✅ Flight Orders
+            List<FlightOrder> userFlightOrders = flightOrderRepository.findByOrderIn(userOrders);
+            HttpClient client = HttpClient.newHttpClient();
+            ObjectMapper mapper = new ObjectMapper();
+
+            for (FlightOrder flight : userFlightOrders) {
+                String flightNum = flight.getFlightNumber();
+                HttpRequest req = HttpRequest.newBuilder()
+                        .uri(new URI("http://localhost:8081/flights/flightNumber/" + flightNum))
+                        .GET()
+                        .build();
+                HttpResponse<String> resp = client.send(req, HttpResponse.BodyHandlers.ofString());
+                if (resp.statusCode() == 200) {
+                    JsonNode flightJson = mapper.readTree(resp.body());
+                    String departureTime = flightJson.get("departureTime").asText();
+                    flight.setStatus(flight.getStatus() + " @ " + departureTime);
+                }
+            }
+
+            model.addAttribute("flightOrders", userFlightOrders);
         } else {
             model.addAttribute("hotelOrders", List.of());
+            model.addAttribute("flightOrders", List.of());
         }
 
         return "layout";
     }
+
 
     @PostMapping("/bookings/cancelHotel")
     public String cancelHotelBooking(@RequestParam("hotelOrderId") Integer hotelOrderId,

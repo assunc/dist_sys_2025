@@ -2,10 +2,6 @@
 <html xmlns:th="http://www.thymeleaf.org">
 <head>
     <title>My Bookings</title>
-
-</head>
-<body>
-<div th:fragment="content">
     <style>
         body {
             background-color: #f8f9fa;
@@ -48,35 +44,34 @@
         }
 
         .status {
-      font-size: 14px;
-      margin-top: 10px;
-      font-weight: 600;
-<!--      color: #444;-->
-    }
+            font-size: 14px;
+            margin-top: 10px;
+            font-weight: 600;
+        }
 
-    .status-badge {
-      display: inline-block;
-      padding: 4px 10px;
-      border-radius: 12px;
-      font-size: 13px;
-      font-weight: 600;
-      text-transform: capitalize;
-    }
+        .status-badge {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 13px;
+            font-weight: 600;
+            text-transform: capitalize;
+        }
 
-    .status-booked {
-      background-color: #d4edda;
-      color: #155724;
-    }
+        .status-booked {
+            background-color: #d4edda;
+            color: #155724;
+        }
 
-    .status-canceled {
-      background-color: #f8d7da;
-      color: #721c24;
-    }
+        .status-canceled {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
 
-    .status-pending {
-      background-color: #fff3cd;
-      color: #856404;
-    }
+        .status-pending {
+            background-color: #fff3cd;
+            color: #856404;
+        }
 
         .cancel-button {
             margin-top: 15px;
@@ -104,9 +99,12 @@
             text-decoration: underline;
         }
     </style>
+</head>
+<body>
+<div th:fragment="content">
 
+    <!-- Hotel Bookings -->
     <h2>Your Hotel Bookings</h2>
-
     <div th:if="${hotelOrders.isEmpty()}" class="no-bookings">
         <p>You have no hotel bookings yet.</p>
         <p>Ready to explore? <a href="/hotels">Book a new hotel!</a></p>
@@ -118,8 +116,8 @@
             <p class="details">
                 <strong>Hotel:</strong> <span th:text="${order.hotelName}"></span><br/>
                 <strong>Room:</strong> <span th:text="${order.roomNumber}"></span><br/>
-                <strong>Dates:</strong> <span th:text="${#temporals.format(order.startDate, 'dd MMMM yyyy')}"></span>
-                - <span th:text="${#temporals.format(order.endDate, 'dd MMMM yyyy')}"></span><br/>
+                <strong>Dates:</strong> <span th:text="${#temporals.format(order.startDate, 'dd MMM yyyy')}"></span>
+                - <span th:text="${#temporals.format(order.endDate, 'dd MMM yyyy')}"></span><br/>
             </p>
             <p class="status">
                 Status:
@@ -135,6 +133,33 @@
             </form>
         </div>
     </div>
+
+    <!-- Flight Bookings -->
+    <h2 style="margin-top: 50px;">Your Flight Bookings</h2>
+    <div th:if="${flightOrders.isEmpty()}" class="no-bookings">
+        <p>You have no flight bookings yet.</p>
+        <p>Ready to fly? <a href="/flights">Book a new flight!</a></p>
+    </div>
+
+    <div th:unless="${flightOrders.isEmpty()}">
+        <div th:each="flight : ${flightOrders}" class="booking-item">
+            <h3>
+                <span th:text="'Flight: ' + ${flight.flightNumber}"></span>
+            </h3>
+            <p class="details">
+                <strong>Seat:</strong> <span th:text="${flight.seatNumber}"></span><br/>
+                <strong>Booking ID:</strong> <span th:text="${flight.bookingId}"></span><br/>
+                <strong>Status:</strong>
+                <span th:text="${flight.status}"
+                      th:classappend="'status-badge status-' + ${flight.status.toLowerCase()}">Status</span>
+            </p>
+            <form th:action="@{/cancel-order}" method="post" th:if="${flight.status.toLowerCase() != 'cancelled'}">
+                <input type="hidden" name="flightOrderId" th:value="${flight.id}" />
+                <button type="submit" class="cancel-button">Cancel Flight</button>
+            </form>
+        </div>
+    </div>
+
 </div>
 </body>
 </html>
