@@ -11,17 +11,22 @@ public class FlightOrder {
     private Integer id;
 
     @ManyToOne(fetch = FetchType.LAZY)
+
     @JoinColumn(name = "order_id", nullable = false)
     private Order order; // FK to Order table
 
     @Column(name = "flight_number", length = 50, nullable = false)
     private String flightNumber; // Optional: could be from user input or seat metadata
 
+
+
     @Column(name = "seat_number", length = 5, nullable = false)
     private String seatNumber;
 
+
     @Column(name = "booking_id", nullable = false)
     private Long bookingId; // 🔄 Renamed from reservationId
+
 
     @Column(name = "status", length = 500)
     private String status;
@@ -39,11 +44,12 @@ public class FlightOrder {
         this.flightNumber = flightNumber;
         this.seatNumber = seatNumber;
         this.bookingId = bookingId;
+
         this.status = status;
         this.airlineSupplier = airlineSupplier;
     }
 
-    // ---------- Getters and Setters ----------
+
     public Integer getId() {
         return id;
     }
@@ -75,7 +81,6 @@ public class FlightOrder {
     public void setSeatNumber(String seatNumber) {
         this.seatNumber = seatNumber;
     }
-
     public Long getBookingId() {
         return bookingId;
     }
@@ -108,6 +113,7 @@ public class FlightOrder {
                 ", flightNumber='" + flightNumber + '\'' +
                 ", seatNumber='" + seatNumber + '\'' +
                 ", bookingId=" + bookingId +
+
                 ", status='" + status + '\'' +
                 ", airlineSupplier=" + (airlineSupplier != null ? airlineSupplier.getName() : "null") +
                 '}';

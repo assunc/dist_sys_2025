@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8" />
     <title>Travel Broker</title>
-    <!-- ✅ Font Awesome CDN -->
+    <!-- Font Awesome CDN -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <style>
         body, html {
@@ -19,19 +19,21 @@
             padding: 1rem;
             position: fixed;
             width: 100%;
-            z-index: 1000;
+            z-index: 2000;
         }
-        header { top: 0;
+        header { top: 0;            z-index: 3000;
+
         }
-        nav { top: 75px; height: 30px;
-}
-        footer { bottom: 0; }
+        nav { top: 85px; height: 30px;
+        }
+        footer { bottom: 0;  line-height: 5px;  height: 30px; padding:0.5rem;
+        }
         nav ul {
             list-style: none;
             display: flex;
             justify-content: center;
             gap: 2rem;
-            margin: 10;
+            margin: 10px;
             padding: 0;
         }
         nav a {
@@ -42,34 +44,107 @@
             text-decoration: underline;
         }
         main {
-             margin-top: 160px; /* Push content below header + nav */
-             margin-bottom: 40px; /* Push above footer */
-             padding: 0 20px;
-             min-height: calc(100vh - 200px);
+            margin-top: 160px; /* Push content below header + nav */
+            padding: 0 20px;
+            margin-bottom: 60px;
+            min-height: calc(100vh - 160px - 60px);
         }
-        #login-button ,#logout-button{
-                position: absolute;
-                top: 20px;
-                right: 20px;
-                background-color: #4CAF50;
-                color: white;
-                padding: 8px 16px;
-                border: none;
-                text-decoration: none;
-                font-size: 14px;
-                border-radius: 4px;
-                cursor: pointer;
-                }
+        #login-button {
+
+        background-color: #4CAF50;
+        color: white;
+        padding: 8px 16px;
+        border: none;
+        text-decoration: none;
+        font-size: 14px;
+        border-radius: 4px;
+        cursor: pointer;
+        }
+
 
         #login-button:hover {
-            background-color: #45a049;
+            background-color: rgba(255, 255, 255, 0.2); /* semi-transparent white */
         }
+         #shopping-cart-button {
+            color: white;
+            font-size: 18px;
+            padding: 6px;
+            border-radius: 6px;
+            transition: background-color 0.2s ease;
+        }
+
+        #shopping-cart-button:hover {
+          background-color: rgba(255, 255, 255, 0.2); /* semi-transparent white */
+/
+        }
+
+        .top-right {
+            display: flex;
+            gap: 10px;
+            position: absolute;
+            top: 20px;
+            right: 50px;
+            align-items: center;
+            color: white ;
+        }
+
+        .dropdown button {
+            background-color: transparent;
+            color: white;
+            border: 2px solid white;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            font-size: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: background-color 0.2s ease;
+        }
+        .dropdown button:hover {
+            background-color: rgba(255, 255, 255, 0.2);}
+
+        .dropdown-menu {
+            display: none;
+            position: absolute;
+            top: 40px;
+            right: 0;
+            background: white;
+            color: #333;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+            min-width: 160px;
+            text-align: left;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+            z-index: 4000; /* <-- Raise this */
+        }
+
+        .dropdown-menu a {
+            display: flex;
+            padding: 10px 15px;
+            gap: 10px;
+            text-decoration: none;
+            color: #333;
+        }
+
+        .dropdown-menu a:hover {
+            background-color: #e0e0e0;
+        }
+
+        h1>a:hover,
+        h1>a:active,
+        h1>a:focus {
+            color: inherit;
+            text-decoration: none;
+        }
+
 
     </style>
 </head>
 <body>
 <header>
-    <h1>Travel Broker</h1>
+    <h1><a href="/" style="color: inherit; text-decoration: none;">Travel Broker</a></h1>
     <script>
         const url = new URL(window.location.href);
         if (url.searchParams.get("loggedOut")) {
@@ -77,21 +152,56 @@
             window.history.replaceState({}, "", url);
             window.location.reload(true);
         }
+
+         function toggleDropdown() {
+            const menu = document.getElementById("profileDropdown");
+            menu.style.display = (menu.style.display === "block") ? "none" : "block";
+            document.addEventListener('click', function hideMenu(event) {
+                if (!event.target.closest('.dropdown')) {
+                    menu.style.display = 'none';
+                    document.removeEventListener('click', hideMenu);
+                }
+            });
+        }
     </script>
 
-    <div style="position: absolute; top: 20px; right: 20px;">
-        <a th:if="${!isLoggedIn}" th:href="@{/oauth2/authorization/auth0}" id="login-button">Login</a>
+<!--    <div style="display: flex; gap: 10px; position: absolute; top: 20px; right: 50px;">-->
+    <!--        <a th:if="${isLoggedIn}" th:href="@{/profile}" id="profile-button">Profile</a>-->
+    <!--        <a th:if="${isLoggedIn}" th:href="@{/bookings}" id="my-bookings-button">My Bookings</a>-->
+    <!--        <a th:href="@{/shopping-cart}" id="shopping-cart-button">Shopping Cart</a>-->
+    <!--        <a th:if="${!isLoggedIn}" th:href="@{/oauth2/authorization/auth0}" id="login-button">Login</a>-->
+    <!--        <a th:if="${isLoggedIn}" th:href="@{/logout}" id="logout-button">Logout</a>-->
+    <!--    </div>-->
+    <div class="top-right">
+        <!-- Shopping Cart (always visible) -->
+        <a th:href="@{/shopping-cart}" id="shopping-cart-button" >
+            <i class="fa-solid fa-cart-shopping"></i>
+        </a>
 
-        <div th:if="${isLoggedIn}">
-            <a th:href="@{/logout}" id="logout-button" style="margin-left: 10px;">Logout</a>
-            <a th:href="@{/my-flight-orders}"
-               style="margin-left: 10px; background-color: #007bff; padding: 8px 14px; border-radius: 4px; color: white; text-decoration: none;">
-                My Flight Orders
-            </a>
+        <!-- Login (if not logged in) -->
+        <a th:if="${!isLoggedIn}" th:href="@{/oauth2/authorization/auth0}" id="login-button">
+            <i class="fa-solid fa-right-to-bracket"></i> Login
+        </a>
+
+        <!-- Profile dropdown (if logged in) -->
+        <div th:if="${isLoggedIn}" class="dropdown" style="position: relative;">
+            <button onclick="toggleDropdown()">
+                <i class="fa-solid fa-user"></i>
+            </button>
+            <div id="profileDropdown" class="dropdown-menu">
+                <a th:href="@{/profile}"><i class="fa-solid fa-user"></i> Profile</a>
+<!--                remove booking part for manager only user can see -->
+                <a th:if="${#authentication.principal.claims['https://travelbroker.com/role'] == 'user'}"
+                   th:href="@{/bookings}"><i class="fa-solid fa-calendar-check"></i> My Bookings</a>
+                <!-- 👇 Show Dashboard only if role is manager -->
+                <a th:if="${#authentication.principal.claims['https://travelbroker.com/role'] == 'manager'}"
+                   th:href="@{/manager/dashboard}">
+                    <i class="fa-solid fa-chart-line"></i> Dashboard
+                </a>
+                <a th:href="@{/logout}"><i class="fa-solid fa-right-from-bracket"></i> Logout</a>
+            </div>
         </div>
     </div>
-
-
 </header>
 
 <nav>

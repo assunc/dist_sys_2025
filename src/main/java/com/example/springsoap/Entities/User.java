@@ -62,4 +62,6 @@ public class User {
                 ", deliveryAddress='" + deliveryAddress + '\'' +
                 '}';
     }
+
 }
+

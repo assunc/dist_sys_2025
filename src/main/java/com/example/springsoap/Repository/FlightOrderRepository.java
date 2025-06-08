@@ -14,5 +14,6 @@ public interface FlightOrderRepository extends JpaRepository<FlightOrder, Intege
 
     List<FlightOrder> findTop3ByOrderByIdDesc();
 
+
     List<FlightOrder> findAllByOrderByIdDesc();
 }

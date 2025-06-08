@@ -9,7 +9,5 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 public class SpringSoapApplication {
     public static void main(String[] args) {
         SpringApplication.run(SpringSoapApplication.class, args);
-
-}
-
+    }
 }

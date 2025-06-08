@@ -5,6 +5,7 @@ import jakarta.servlet.http.HttpSession;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Scope;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
@@ -19,12 +20,22 @@ import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.logout.LogoutSuccessHandler;
 import org.springframework.web.util.UriComponentsBuilder;
 import org.springframework.web.client.RestTemplate;
+import org.springframework.web.context.WebApplicationContext;
+import org.springframework.context.annotation.ScopedProxyMode;
+import com.example.springsoap.Model.Reservation;
+
 
 import java.util.*;
 
 @Configuration
 @EnableMethodSecurity
 public class SecurityConfig {
+
+    @Bean
+    @Scope(value = WebApplicationContext.SCOPE_SESSION, proxyMode = ScopedProxyMode.TARGET_CLASS)
+    public Reservation reservations() {
+        return new Reservation();
+    }
 
     @Bean
     public RestTemplate restTemplate() {
@@ -42,6 +53,11 @@ public class SecurityConfig {
                         .requestMatchers("/", "/login/oauth2", "/logged-out", "/css/**", "/js/**, /flights, /hotels, /combo").permitAll()
                         .requestMatchers("/manager/**").hasRole("manager")
                         .anyRequest().permitAll()
+                )
+                .exceptionHandling(exception ->
+                        exception.accessDeniedHandler((request, response, accessDeniedException) -> {
+                            response.sendRedirect("/"); //  redirect after 403
+                        })
                 )
                 .oauth2Login(oauth2 -> oauth2
                         .userInfoEndpoint(userInfo -> userInfo
@@ -65,31 +81,36 @@ public class SecurityConfig {
             @Override
             public OidcUser loadUser(OidcUserRequest userRequest) {
                 OidcUser oidcUser = delegate.loadUser(userRequest);
-
                 Map<String, Object> claims = oidcUser.getClaims();
-                List<String> roles = (List<String>) claims.getOrDefault("https://distributed.com/roles", List.of());
 
                 Set<GrantedAuthority> authorities = new HashSet<>();
-                for (String role : roles) {
+
+                Object rawRoles = claims.get("https://travelbroker.com/role");
+                if (rawRoles instanceof String role) {
                     authorities.add(new SimpleGrantedAuthority("ROLE_" + role));
+                } else if (rawRoles instanceof List<?> roleList) {
+                    for (Object r : roleList) {
+                        authorities.add(new SimpleGrantedAuthority("ROLE_" + r.toString()));
+                    }
                 }
 
-                // Add default authorities (like 'SCOPE_openid' etc.)
+                // Add default OpenID scope authorities
                 authorities.addAll(oidcUser.getAuthorities());
 
                 return new DefaultOidcUser(authorities, oidcUser.getIdToken(), oidcUser.getUserInfo());
             }
         };
+
     }
 
     private LogoutSuccessHandler oidcLogoutSuccessHandler() {
         return (request, response, authentication) -> {
             System.out.println("Logout triggered");
 
-            // ✅ Manually clear the SecurityContext
+            //  Manually clear the SecurityContext
             SecurityContextHolder.clearContext();
 
-            // ✅ Also invalidate the HttpSession (in case Spring didn't)
+            // Also invalidate the HttpSession (in case Spring didn't)
             HttpSession session = request.getSession(false); // does not create its own session false
 
             if (session != null) {

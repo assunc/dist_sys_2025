@@ -1,16 +1,28 @@
 package com.example.springsoap.Controller;
 
+
 import com.example.springsoap.Entities.FlightOrder;
 import com.example.springsoap.Entities.Order;
 import com.example.springsoap.Entities.User;
 import com.example.springsoap.Model.Airline;
+
+import com.example.springsoap.Entities.*;
+
 import com.example.springsoap.Model.Hotel;
+import com.example.springsoap.Model.Reservation;
 import com.example.springsoap.Model.Room;
+
 import com.example.springsoap.Model.Seat;
+
+import com.example.springsoap.Model.RoomReservation;
+import com.example.springsoap.Repository.AirlineSupplierRepository;
+import com.example.springsoap.Repository.HotelOrderRepository;
+
 import com.example.springsoap.Repository.FlightOrderRepository;
 import com.example.springsoap.Repository.OrderRepository;
 import com.example.springsoap.Repository.UserRepository;
 import com.example.springsoap.UserService;
+
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -21,36 +33,39 @@ import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+
+import com.example.springsoap.HotelService;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.security.access.prepost.PreAuthorize;
+
 import org.springframework.web.bind.annotation.*;
 import org.springframework.security.oauth2.core.oidc.user.OidcUser;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
+
 import org.springframework.web.client.RestTemplate;
 
-import org.w3c.dom.Document;
-import org.w3c.dom.NodeList;
-import org.xml.sax.InputSource;
 
-import javax.xml.parsers.DocumentBuilder;
-import javax.xml.parsers.DocumentBuilderFactory;
-import javax.xml.xpath.XPath;
-import javax.xml.xpath.XPathConstants;
-import javax.xml.xpath.XPathFactory;
 import java.io.IOException;
-import java.io.StringReader;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.text.ParseException;
 import java.text.SimpleDateFormat;
+
 import java.time.Duration;
 import java.time.Instant;
 import java.util.*;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.stream.Collectors;
+
+import java.util.*;
+
 
 @Controller
 public class BrokerController {
@@ -62,25 +77,32 @@ public class BrokerController {
     private UserRepository userRepository;
 
     private final UserService userService;
-    private final RestTemplate restTemplate;
-    private final XPath xpath;
+    private final HotelService hotelService;
+    private final AirlineSupplierRepository airlineSupplierRepository;
+    private final HotelOrderRepository hotelOrderRepository;
+//    private final FlightOrderRepository flightOrderRepository;
+//    private final OrderRepository orderRepository;
+//    private final UserRepository userRepository;
+
+    private final Reservation reservation;
 
     @Autowired
-    public BrokerController(UserService userService, RestTemplate restTemplate) {
+    public BrokerController(
+            UserService userService, HotelService hotelService,
+            Reservation reservation,
+            AirlineSupplierRepository airlineSupplierRepository,
+            HotelOrderRepository hotelOrderRepository,
+            FlightOrderRepository flightOrderRepository,
+            OrderRepository orderRepository, UserRepository userRepository
+    ) {
         this.userService = userService;
-        this.restTemplate = restTemplate;
-        xpath = XPathFactory.newInstance().newXPath();
-        // Register a custom NamespaceContext to handle "ns2" and other namespaces
-        xpath.setNamespaceContext(new javax.xml.namespace.NamespaceContext() {
-            public String getNamespaceURI(String prefix) {
-                // Map "ns2" to the correct namespace URI from the response
-                if (prefix.equals("ns2")) return "http://foodmenu.io/gt/webservice";
-                if (prefix.equals("SOAP-ENV")) return "http://schemas.xmlsoap.org/soap/envelope/";
-                return null;
-            }
-            public String getPrefix(String namespaceURI) { return null; }
-            public java.util.Iterator<String> getPrefixes(String namespaceURI) { return null; } // Corrected type
-        });
+        this.hotelService = hotelService;
+        this.reservation = reservation;
+        this.airlineSupplierRepository = airlineSupplierRepository;
+        this.hotelOrderRepository = hotelOrderRepository;
+        this.flightOrderRepository = flightOrderRepository;
+        this.orderRepository = orderRepository;
+        this.userRepository = userRepository;
     }
 
 
@@ -100,6 +122,7 @@ public class BrokerController {
         model.addAttribute("contentTemplate", "index");
         return "layout";
     }
+
 
     @GetMapping("/flights")
     public String flights(@AuthenticationPrincipal OidcUser user, Model model) throws URISyntaxException, IOException, InterruptedException {
@@ -135,6 +158,7 @@ public class BrokerController {
         model.addAttribute("contentTemplate", "flights");
         return "layout";
     }
+
 
 
 
@@ -464,6 +488,7 @@ public class BrokerController {
 
 
 
+
     @GetMapping("/hotels")
     public String hotels(@AuthenticationPrincipal OidcUser user, Model model) {
         boolean isLoggedIn = user != null;
@@ -480,6 +505,7 @@ public class BrokerController {
 
     @PostMapping("/hotels")
     public String searchHotels(
+            @RequestParam("destination") String destination,
             @RequestParam("startDate") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) Date startDate,
             @RequestParam("endDate") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) Date endDate,
             @RequestParam("numberOfPeople") int numberOfPeople,
@@ -491,57 +517,9 @@ public class BrokerController {
         model.addAttribute("title", "Hotels");
         model.addAttribute("contentTemplate", "hotels");
 
-        SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
-
-        // Manually construct SOAP request XML
-        String soapRequest = String.format(
-                "<soapenv:Envelope xmlns:soapenv=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns:web=\"http://foodmenu.io/gt/webservice\">\n" +
-                "   <soapenv:Header>\n" +
-                "       <wsse:Security soapenv:mustUnderstand=\"1\" xmlns:wsse=\"http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-secext-1.0.xsd\" xmlns:wsu=\"http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-utility-1.0.xsd\">\n" +
-                "           <wsse:UsernameToken wsu:Id=\"UsernameToken-90EE12B980F2A1E63C16196236965155\">\n" +
-                "               <wsse:Username>brokerApp</wsse:Username>\n" +
-                "               <wsse:Password Type=\"http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-username-token-profile-1.0#PasswordText\">$2a$10$t39txwmagJ8611gPSQyJxeV5BlH6MQKLzxTRo4uKFDijXup0cUzAG</wsse:Password>\n" +
-                "           </wsse:UsernameToken>\n" +
-                "       </wsse:Security>\n" +
-                "   </soapenv:Header>\n" +
-                "   <soapenv:Body>\n" +
-                "      <web:getFreeHotelsRequest>\n" +
-                "         <web:startDate>%s</web:startDate>\n" +
-                "         <web:endDate>%s</web:endDate>\n" +
-                "      </web:getFreeHotelsRequest>\n" +
-                "   </soapenv:Body>\n" +
-                "</soapenv:Envelope>",
-                dateFormat.format(startDate), dateFormat.format(endDate)
-        );
-
-        HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(MediaType.TEXT_XML);
-
-        List<Hotel> freeHotels = new ArrayList<>();
-        String hotelSupplierUrl = "http://hotelsupplier.azurewebsites.net:80/ws";
-
         try {
-            ResponseEntity<String> response = restTemplate.postForEntity(hotelSupplierUrl, new HttpEntity<>(soapRequest, headers), String.class);
-            String responseBody = response.getBody();
-            assert responseBody != null;
+            List<Hotel> freeHotels = hotelService.getFreeHotels(startDate, endDate, destination);
 
-            DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
-            factory.setNamespaceAware(true);
-            // XPath to find all hotel elements (now using 'ns2' prefix)
-            NodeList hotelNodes = (NodeList) xpath.evaluate("//ns2:hotels", factory.newDocumentBuilder().parse(new InputSource(new StringReader(responseBody))), XPathConstants.NODESET);
-
-            for (int i = 0; i < hotelNodes.getLength(); i++) {
-                org.w3c.dom.Element roomElement = (org.w3c.dom.Element) hotelNodes.item(i);
-                freeHotels.add(new Hotel(
-                        Integer.parseInt(xpath.evaluate("ns2:id", roomElement)),
-                        xpath.evaluate("ns2:name", roomElement),
-                        xpath.evaluate("ns2:address", roomElement),
-                        xpath.evaluate("ns2:city", roomElement),
-                        xpath.evaluate("ns2:country", roomElement),
-                        xpath.evaluate("ns2:phoneNumber", roomElement),
-                        xpath.evaluate("ns2:description", roomElement)
-                ));
-            }
             model.addAttribute("hotels", freeHotels);
             model.addAttribute("searchPerformed", true);
             model.addAttribute("hasHotels", !freeHotels.isEmpty());
@@ -575,58 +553,9 @@ public class BrokerController {
         model.addAttribute("isLoggedIn", isLoggedIn);
         model.addAttribute("title", "Hotel Info");
         model.addAttribute("contentTemplate", "hotel-info");
-        // Initialize rooms list to empty when first loading the page
-
-        // Manually construct SOAP request XML
-        String soapRequest = String.format(
-                "<soapenv:Envelope xmlns:soapenv=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns:web=\"http://foodmenu.io/gt/webservice\">\n" +
-                "   <soapenv:Header>\n" +
-                "       <wsse:Security soapenv:mustUnderstand=\"1\" xmlns:wsse=\"http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-secext-1.0.xsd\" xmlns:wsu=\"http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-utility-1.0.xsd\">\n" +
-                "           <wsse:UsernameToken wsu:Id=\"UsernameToken-90EE12B980F2A1E63C16196236965155\">\n" +
-                "               <wsse:Username>brokerApp</wsse:Username>\n" +
-                "               <wsse:Password Type=\"http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-username-token-profile-1.0#PasswordText\">$2a$10$t39txwmagJ8611gPSQyJxeV5BlH6MQKLzxTRo4uKFDijXup0cUzAG</wsse:Password>\n" +
-                "           </wsse:UsernameToken>\n" +
-                "       </wsse:Security>\n" +
-                "   </soapenv:Header>\n" +
-                "   <soapenv:Body>\n" +
-                "      <web:getHotelRequest>\n" +
-                "         <web:hotelId>%d</web:hotelId>\n" +
-                "      </web:getHotelRequest>\n" +
-                "   </soapenv:Body>\n" +
-                "</soapenv:Envelope>",
-                hotelId
-        );
-
-        HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(MediaType.TEXT_XML);
-
-        String hotelSupplierUrl = "http://hotelsupplier.azurewebsites.net:80/ws";
-
         try {
-            ResponseEntity<String> response = restTemplate.postForEntity(hotelSupplierUrl, new HttpEntity<>(soapRequest, headers), String.class);
-            String responseBody = response.getBody();
-
-            // Parse the SOAP response
-            DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
-            factory.setNamespaceAware(true);
-            assert responseBody != null;
-
-            // XPath to find all hotel elements (now using 'ns2' prefix)
-            NodeList hotelNodes = (NodeList) xpath.evaluate("//ns2:hotel", factory.newDocumentBuilder().parse(new InputSource(new StringReader(responseBody))), XPathConstants.NODESET);
-
-            for (int i = 0; i < hotelNodes.getLength(); i++) {
-                org.w3c.dom.Element roomElement = (org.w3c.dom.Element) hotelNodes.item(i);
-                Hotel hotel = new Hotel(
-                        Integer.parseInt(xpath.evaluate("ns2:id", roomElement)),
-                        xpath.evaluate("ns2:name", roomElement),
-                        xpath.evaluate("ns2:address", roomElement),
-                        xpath.evaluate("ns2:city", roomElement),
-                        xpath.evaluate("ns2:country", roomElement),
-                        xpath.evaluate("ns2:phoneNumber", roomElement),
-                        xpath.evaluate("ns2:description", roomElement)
-                );
-                model.addAttribute("hotel", hotel);
-            }
+            Hotel hotel = hotelService.getHotel(hotelId);
+            model.addAttribute("hotel", hotel);
             model.addAttribute("error", false);
         } catch (Exception e) {
             System.err.println("Exception during hotel search: " + e.getMessage());
@@ -635,62 +564,12 @@ public class BrokerController {
             model.addAttribute("hotel", null); // Ensure rooms list is empty on error
         }
 
-        SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
-
-        // Manually construct SOAP request XML
-        String soapRequest2 = String.format(
-                "<soapenv:Envelope xmlns:soapenv=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns:web=\"http://foodmenu.io/gt/webservice\">\n" +
-                        "   <soapenv:Header>\n" +
-                        "       <wsse:Security soapenv:mustUnderstand=\"1\" xmlns:wsse=\"http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-secext-1.0.xsd\" xmlns:wsu=\"http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-utility-1.0.xsd\">\n" +
-                        "           <wsse:UsernameToken wsu:Id=\"UsernameToken-90EE12B980F2A1E63C16196236965155\">\n" +
-                        "               <wsse:Username>brokerApp</wsse:Username>\n" +
-                        "               <wsse:Password Type=\"http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-username-token-profile-1.0#PasswordText\">$2a$10$t39txwmagJ8611gPSQyJxeV5BlH6MQKLzxTRo4uKFDijXup0cUzAG</wsse:Password>\n" +
-                        "           </wsse:UsernameToken>\n" +
-                        "       </wsse:Security>\n" +
-                        "   </soapenv:Header>\n" +
-                        "   <soapenv:Body>\n" +
-                        "      <web:getFreeRoomsRequest>\n" +
-                        "         <web:startDate>%s</web:startDate>\n" +
-                        "         <web:endDate>%s</web:endDate>\n" +
-                        "         <web:hotelId>%d</web:hotelId>\n" +
-                        "      </web:getFreeRoomsRequest>\n" +
-                        "   </soapenv:Body>\n" +
-                        "</soapenv:Envelope>",
-                dateFormat.format(startDate), dateFormat.format(endDate), hotelId
-        );
-
-        List<Room> filteredRooms = new ArrayList<>();
         try {
-            ResponseEntity<String> response = restTemplate.postForEntity(hotelSupplierUrl, new HttpEntity<>(soapRequest2, headers), String.class);
-            String responseBody = response.getBody();
-
-            // Parse the SOAP response
-            DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
-            factory.setNamespaceAware(true);
-            assert responseBody != null;
-
-            // XPath to find all hotel elements (now using 'ns2' prefix)
-            NodeList roomNodes = (NodeList) xpath.evaluate("//ns2:rooms", factory.newDocumentBuilder().parse(new InputSource(new StringReader(responseBody))), XPathConstants.NODESET);
-
-            for (int i = 0; i < roomNodes.getLength(); i++) {
-                org.w3c.dom.Element roomElement = (org.w3c.dom.Element) roomNodes.item(i);
-                int roomNOfPeople = Integer.parseInt(xpath.evaluate("ns2:nOfPeople", roomElement));
-
-                if (roomNOfPeople >= numberOfPeople) {
-                    filteredRooms.add(new Room(
-                            Integer.parseInt(xpath.evaluate("ns2:roomId", roomElement)),
-                            Integer.parseInt(xpath.evaluate("ns2:number", roomElement)),
-                            roomNOfPeople,
-                            Integer.parseInt(xpath.evaluate("ns2:price", roomElement))
-                    ));
-                }
-            }
+            List<Room> filteredRooms = hotelService.getFreeRooms(hotelId, startDate, endDate, numberOfPeople);
             model.addAttribute("rooms", filteredRooms);
             model.addAttribute("searchPerformed", true);
             model.addAttribute("hasRooms", !filteredRooms.isEmpty());
             model.addAttribute("error", false);
-
-
         } catch (Exception e) {
             System.err.println("Exception during room search: " + e.getMessage());
             e.printStackTrace(); // Print full stack trace for detailed debugging
@@ -708,6 +587,273 @@ public class BrokerController {
         return "layout";
     }
 
+    @PostMapping("/add-to-cart")
+    public String addToCart(@RequestParam Map<String, String> allRequestParams, @AuthenticationPrincipal OidcUser user, Model model) {
+        boolean isLoggedIn = user != null;
+        model.addAttribute("isLoggedIn", isLoggedIn);
+        model.addAttribute("title", "Payment Information");
+
+        SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
+        Date startDate, endDate;
+        try {
+            startDate = dateFormat.parse(allRequestParams.get("startDate"));
+            endDate = dateFormat.parse(allRequestParams.get("endDate"));
+        } catch (ParseException e) {
+            throw new RuntimeException(e);
+        }
+        // Iterate through all request parameters to find selected room checkboxes
+        // And the value is "on" when checked.
+        for (Map.Entry<String, String> entry : allRequestParams.entrySet()) {
+            if (entry.getKey().startsWith("Room") && entry.getValue().equals("on")) {
+                reservation.addRoomReservation(new RoomReservation(
+                        new Room(entry.getKey()),
+                        allRequestParams.get("name"),
+                        startDate, endDate
+                ));
+            }
+        }
+
+        return "redirect:/shopping-cart";
+    }
+
+    @PostMapping("/payment")
+    public String payment(@RequestParam Map<String, String> allRequestParams, @AuthenticationPrincipal OidcUser user, Model model) {
+        boolean isLoggedIn = user != null;
+        model.addAttribute("isLoggedIn", isLoggedIn);
+        model.addAttribute("title", "Payment Information");
+        model.addAttribute("contentTemplate", "payment");
+
+        SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
+        Date startDate, endDate;
+        if (allRequestParams.containsKey("startDate") && allRequestParams.containsKey("endDate")) {
+            try {
+                startDate = dateFormat.parse(allRequestParams.get("startDate"));
+                endDate = dateFormat.parse(allRequestParams.get("endDate"));
+            } catch (ParseException e) {
+                throw new RuntimeException(e);
+            }
+            // Iterate through all request parameters to find selected room checkboxes
+            // And the value is "on" when checked.
+            for (Map.Entry<String, String> entry : allRequestParams.entrySet()) {
+                if (entry.getKey().startsWith("Room") && entry.getValue().equals("on")) {
+                    reservation.addRoomReservation(new RoomReservation(
+                            new Room(entry.getKey()),
+                            allRequestParams.get("name"),
+                            startDate, endDate
+                    ));
+                }
+            }
+        }
+
+        model.addAttribute("reservation", reservation);
+
+        // --- Autofill Logic ---
+        String userAddress = null;
+        String userCity = null;
+        String userPostalCode = null;
+        String userCountry = null;
+        String userCardNumber = null;
+        String userExpirationMonth = null;
+        String userExpirationYear = null;
+        String userCvc = null;
+        if (isLoggedIn) {
+            User userDb = userRepository.findByEmail(user.getEmail()).orElseThrow(() -> new RuntimeException("User not found in DB"));
+            String deliveryAddress = userDb.getDeliveryAddress();
+            String paymentInfo = userDb.getPaymentInfo();
+            if (!paymentInfo.isEmpty()) {
+                String[] paymentInfoSplit = paymentInfo.split("_");
+                userCardNumber = paymentInfoSplit[0];
+                userExpirationMonth = paymentInfoSplit[1];
+                userExpirationYear = paymentInfoSplit[2];
+                userCvc = paymentInfoSplit[3];
+            }
+            if (!deliveryAddress.isEmpty()) {
+                String[] deliveryAddressSplit = deliveryAddress.split("_");
+                userAddress = deliveryAddressSplit[0];
+                userCity = deliveryAddressSplit[1];
+                userPostalCode = deliveryAddressSplit[2];
+                userCountry = deliveryAddressSplit[3];
+            }
+        }
+        model.addAttribute("userAddress", userAddress);
+        model.addAttribute("userCity", userCity);
+        model.addAttribute("userPostalCode", userPostalCode);
+        model.addAttribute("userCountry", userCountry);
+        model.addAttribute("userCardNumber", userCardNumber);
+        model.addAttribute("userExpirationMonth", userExpirationMonth);
+        model.addAttribute("userExpirationYear", userExpirationYear);
+        model.addAttribute("userCvc", userCvc);
+
+        return "layout";
+    }
+
+    @PostMapping("/process-reservation")
+    public String processReservation(
+            @RequestParam("cardNumber") String cardNumber,
+            @RequestParam("expirationMonth") int expirationMonth,
+            @RequestParam("expirationYear") int expirationYear,
+            @RequestParam("cvc") String cvc,
+            @RequestParam("billingStreet") String billingStreet,
+            @RequestParam("billingCity") String billingCity,
+            @RequestParam("billingPostalCode") String billingPostalCode,
+            @RequestParam("billingCountry") String billingCountry,
+            @AuthenticationPrincipal OidcUser user,
+            Model model
+    ) {
+        boolean isLoggedIn = user != null;
+        model.addAttribute("isLoggedIn", isLoggedIn);
+        model.addAttribute("title", "Process Reservation");
+        model.addAttribute("contentTemplate", "confirmation");
+
+        SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
+
+        Order newOrder = new Order(
+                isLoggedIn ? userService.findOrCreateFromOidcUser(user) : null,
+                billingStreet + ", " + billingCity + ", " + billingPostalCode + ", " + billingCountry,
+                cardNumber + ", " + expirationMonth + "/" + expirationYear + ", " + cvc,
+                "pending"
+        );
+
+        List<HotelOrder> hotelOrders = new ArrayList<>();
+        List<FlightOrder> flightOrders = new ArrayList<>();
+
+        // Two stage commit
+        boolean allBookingsPending = true;
+        boolean allBookingsBooked = true;
+        boolean allBookingsCanceled = false;
+
+        if (!reservation.getRoomReservations().isEmpty()) {
+            try {
+                allBookingsPending = hotelService.reserveOrders(reservation.getRoomReservations(), newOrder, hotelOrders);
+                model.addAttribute("error", false);
+            } catch (Exception e) {
+                System.err.println("Exception during booking search: " + e.getMessage());
+                e.printStackTrace(); // Print full stack trace for detailed debugging
+                model.addAttribute("error", "Error searching for hotels: " + e.getMessage());
+            }
+        }
+
+        if (!reservation.getFlightReservations().isEmpty()) {
+            // add stage 1 of commit here
+        }
+
+        // save stage 1 of commit
+        orderRepository.save(newOrder);
+        hotelOrderRepository.saveAll(hotelOrders);
+        flightOrderRepository.saveAll(flightOrders);
+
+        if (allBookingsPending) { // Stage 2
+            if (!reservation.getRoomReservations().isEmpty()) {
+                try {
+                    allBookingsBooked = hotelService.confirmOrders(newOrder, hotelOrders);
+                    model.addAttribute("error", false);
+                } catch (Exception e) {
+                    System.err.println("Exception during booking search: " + e.getMessage());
+                    e.printStackTrace(); // Print full stack trace for detailed debugging
+                    model.addAttribute("error", "Error searching for hotels: " + e.getMessage());
+                }
+            }
+            if (!reservation.getFlightReservations().isEmpty()) {
+                // add stage 2 of commit here
+            }
+        }
+
+        if (!allBookingsPending || !allBookingsBooked) { // Abort
+            if (!reservation.getRoomReservations().isEmpty()) {
+                try {
+                    allBookingsCanceled = hotelService.cancelOrders(newOrder, hotelOrders);
+                    model.addAttribute("error", false);
+                } catch (Exception e) {
+                    System.err.println("Exception during booking search: " + e.getMessage());
+                    e.printStackTrace(); // Print full stack trace for detailed debugging
+                    model.addAttribute("error", "Error searching for hotels: " + e.getMessage());
+                }
+            }
+            if (!reservation.getFlightReservations().isEmpty()) {
+                // add abort of commit here
+            }
+        }
+
+        if (allBookingsBooked) {
+            // everything went well
+            reservation.clear();
+            // save stage 2 of commit
+            orderRepository.save(newOrder);
+            hotelOrderRepository.saveAll(hotelOrders);
+            flightOrderRepository.saveAll(flightOrders);
+        }
+
+        if (allBookingsCanceled) {
+            // transaction aborted
+            // save abort of commit
+            orderRepository.save(newOrder);
+            hotelOrderRepository.saveAll(hotelOrders);
+            flightOrderRepository.saveAll(flightOrders);
+        }
+
+        return "layout";
+    }
+
+    @GetMapping("/shopping-cart")
+    public String viewShoppingCart(Model model, @AuthenticationPrincipal OidcUser user) {
+        boolean isLoggedIn = (user != null);
+        model.addAttribute("isLoggedIn", isLoggedIn);
+        model.addAttribute("title", "My Bookings");
+        model.addAttribute("contentTemplate", "shopping-cart");
+        model.addAttribute("reservation", reservation);
+
+        return "layout";
+    }
+
+    @GetMapping("/bookings")
+    public String viewBookings(Model model, @AuthenticationPrincipal OidcUser user) {
+        boolean isLoggedIn = (user != null);
+        model.addAttribute("isLoggedIn", isLoggedIn);
+        model.addAttribute("title", "My Bookings");
+        model.addAttribute("contentTemplate", "bookings");
+
+        if (isLoggedIn) {
+            User currentUser = userService.findOrCreateFromOidcUser(user);
+
+            // Fetch hotel orders associated with this user's orders
+            List<HotelOrder> userHotelOrders = new ArrayList<>();
+            for (Order order : orderRepository.findByUser(currentUser)) {
+                userHotelOrders.addAll(hotelOrderRepository.findByOrder(order));
+            }
+
+            // Sort the list chronologically by start date
+            userHotelOrders.sort(Comparator.comparing(HotelOrder::getStartDate));
+
+            model.addAttribute("hotelOrders", userHotelOrders);
+        } else {
+            model.addAttribute("hotelOrders", List.of());
+        }
+
+        return "layout";
+    }
+
+    @PostMapping("/bookings/cancelHotel")
+    public String cancelHotelBooking(@RequestParam("hotelOrderId") Integer hotelOrderId,
+                                     @RequestParam("prevPage") String prevPage,
+                                     Model model, @AuthenticationPrincipal OidcUser user) {
+        boolean isLoggedIn = (user != null);
+        model.addAttribute("isLoggedIn", isLoggedIn);
+        Optional<HotelOrder> hotelOrder = hotelOrderRepository.findById(hotelOrderId);
+        if (hotelOrder.isPresent() && !hotelOrder.get().getStatus().equalsIgnoreCase("cancelled")) {
+            try {
+                hotelService.cancelOrders(hotelOrder.get().getOrder(), List.of(hotelOrder.get()));
+                hotelOrderRepository.save(hotelOrder.get());
+                model.addAttribute("error", false);
+            } catch (Exception e) {
+                System.err.println("Exception during booking search: " + e.getMessage());
+                e.printStackTrace(); // Print full stack trace for detailed debugging
+                model.addAttribute("error", "Error searching for hotels: " + e.getMessage());
+            }
+        }
+
+        return "redirect:/" + prevPage; // Redirect back to the previous page
+    }
+
     @GetMapping("/combo")
     public String combo(@AuthenticationPrincipal OidcUser user, Model model) {
         boolean isLoggedIn = user != null;
@@ -716,6 +862,75 @@ public class BrokerController {
         model.addAttribute("contentTemplate", "combo");
         return "layout";
     }
+    @GetMapping("/manager/dashboard")
+    public String managerDashboard(@AuthenticationPrincipal OidcUser user, Model model) {
+        boolean isLoggedIn = user != null;
+        model.addAttribute("isLoggedIn", isLoggedIn);
+        model.addAttribute("title", "Dashboard");
+        model.addAttribute("contentTemplate", "dashboard");
+
+        List<HotelOrder> latestHotelOrders = hotelOrderRepository.findTop3ByOrderByStartDateDesc();
+        List<FlightOrder> latestFlightOrders = flightOrderRepository.findTop3ByOrderByIdDesc();
+        //List<Order> latestComboOrders = orderRepository.findTop2ByOrderByCreatedAtDesc(); // Combo logic
+
+        model.addAttribute("hotelOrders", latestHotelOrders);
+        model.addAttribute("flightOrders", latestFlightOrders);
+        //model.addAttribute("comboOrders", latestComboOrders);
+
+        return "layout";
+    }
+    @GetMapping("/manager/orders/{type}")
+    public String viewAllOrders(
+            @PathVariable String type,
+            @AuthenticationPrincipal OidcUser user,
+            @RequestParam(value = "status", required = false) String status,
+            Model model
+    ) {
+        boolean isLoggedIn = user != null;
+        model.addAttribute("isLoggedIn", isLoggedIn);
+
+        model.addAttribute("title", "All " + type + " Orders");
+        if (status == null || status.isBlank() || status.equalsIgnoreCase("all")) {
+            status = null;
+        }
+        String finalStatus = status;
+
+        switch (type.toLowerCase()) {
+            case "hotel":
+                List<HotelOrder> allHotelOrders = hotelOrderRepository.findAll();
+                if (finalStatus != null) {
+                    allHotelOrders = allHotelOrders.stream()
+                            .filter(o -> o.getStatus().equalsIgnoreCase(finalStatus))
+                            .toList();
+                }
+
+                model.addAttribute("status", finalStatus); // keep track of selected filter
+                model.addAttribute("hotelOrders", allHotelOrders);
+                model.addAttribute("contentTemplate", "manager-orders-hotel");
+                break;
+            case "flight":
+                List<FlightOrder> allFlightOrders = flightOrderRepository.findAll();
+                if (finalStatus != null) {
+                    allFlightOrders = allFlightOrders.stream()
+                            .filter(o -> o.getStatus().equalsIgnoreCase(finalStatus))
+                            .toList();
+                }
+
+                model.addAttribute("status", finalStatus); // keep track of selected filter
+                model.addAttribute("flightOrders", allFlightOrders); // use filtered result
+                model.addAttribute("contentTemplate", "manager-orders-flight");
+                break;
+//            case "combo":
+//                model.addAttribute("orders", orderRepository.findAll()); // Optional: filter combo-tagged ones
+//                model.addAttribute("contentTemplate", "manager-orders-combo");
+//                break;
+            default:
+                return "redirect:/manager/dashboard";
+        }
+
+        return "layout";
+    }
+
 
     @GetMapping("/logged-out")
     public String loggedOut(@AuthenticationPrincipal OidcUser user, Model model) {

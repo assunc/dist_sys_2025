@@ -36,7 +36,9 @@ public class UserService {
         Optional<User> existingUser = userRepository.findByAuth0Id(auth0Id);
 
         if (existingUser.isPresent()) {
+
             // System.out.println("User already exists in DB.");
+
             User user = existingUser.get();
             boolean changed = false;
             if (!email.equals(user.getEmail())) {
