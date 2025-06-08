@@ -125,7 +125,7 @@
         <option th:value="'all'" th:selected="${status == null or status == '' or status == 'all'}">All</option>
         <option th:value="'pending'" th:selected="${status == 'pending'}">Pending</option>
         <option th:value="'booked'" th:selected="${status == 'booked'}">Booked</option>
-        <option th:value="'cancelled'" th:selected="${status == 'cancelled'}">Cancelled</option>
+        <option th:value="'canceled'" th:selected="${status == 'canceled'}">Cancelled</option>
         <option th:value="'failed'" th:selected="${status == 'failed'}">Failed</option>
       </select>
     </form>
@@ -149,6 +149,7 @@
     </p>
     <form th:action="@{/cancel-order}" method="post" th:if="${order.status != 'canceled'}">
       <input type="hidden" name="flightOrderId" th:value="${order.id}"/>
+      <input type="hidden" name="prevPage" th:value="${'manager/orders/flight'}"/>
       <button type="submit" class="cancel-button">Cancel Booking</button>
     </form>
   </div>

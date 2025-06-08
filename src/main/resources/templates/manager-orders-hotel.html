@@ -124,7 +124,7 @@
                 <option th:value="'all'" th:selected="${status == null or status == '' or status == 'all'}">All</option>
                 <option th:value="'pending'" th:selected="${status == 'pending'}">Pending</option>
                 <option th:value="'booked'" th:selected="${status == 'booked'}">Booked</option>
-                <option th:value="'cancelled'" th:selected="${status == 'cancelled'}">Cancelled</option>
+                <option th:value="'canceled'" th:selected="${status == 'canceled'}">Cancelled</option>
                 <option th:value="'failed'" th:selected="${status == 'failed'}">Failed</option>
             </select>
         </form>

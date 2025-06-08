@@ -397,7 +397,7 @@ public class BrokerController {
 
     @PostMapping("/cancel-order")
     public String cancelFlightOrder(@RequestParam("flightOrderId") Integer flightOrderId,
-                                    @AuthenticationPrincipal OidcUser user,
+                                    @AuthenticationPrincipal OidcUser user,@RequestParam("prevPage") String prevPage,
                                     Model model) throws IOException, InterruptedException, URISyntaxException {
 
         Optional<FlightOrder> optionalFlightOrder = flightOrderRepository.findById(flightOrderId);
@@ -429,7 +429,7 @@ public class BrokerController {
             order.setStatus("canceled");
             orderRepository.save(order);
 
-            return "redirect:/manager/dashboard";
+            return "redirect:/" + prevPage; // Redirect back to the previous page
         } else {
             model.addAttribute("error", "Failed to cancel booking: " + response.body());
             return "error";

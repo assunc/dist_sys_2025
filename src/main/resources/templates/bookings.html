@@ -2,6 +2,10 @@
 <html xmlns:th="http://www.thymeleaf.org">
 <head>
     <title>My Bookings</title>
+
+</head>
+<body>
+<div th:fragment="content">
     <style>
         body {
             background-color: #f8f9fa;
@@ -99,10 +103,6 @@
             text-decoration: underline;
         }
     </style>
-</head>
-<body>
-<div th:fragment="content">
-
     <!-- Hotel Bookings -->
     <h2>Your Hotel Bookings</h2>
     <div th:if="${hotelOrders.isEmpty()}" class="no-bookings">
@@ -143,18 +143,18 @@
 
     <div th:unless="${flightOrders.isEmpty()}">
         <div th:each="flight : ${flightOrders}" class="booking-item">
-            <h3>
-                <span th:text="'Flight: ' + ${flight.flightNumber}"></span>
-            </h3>
+            <h3>Order ID: <span th:text="${flight.order != null ? flight.order.id : 'N/A'}"></span></h3>
             <p class="details">
+                <strong>Flight:</strong> <span th:text="${flight.flightNumber}"></span><br/>
+
                 <strong>Seat:</strong> <span th:text="${flight.seatNumber}"></span><br/>
-                <strong>Booking ID:</strong> <span th:text="${flight.bookingId}"></span><br/>
                 <strong>Status:</strong>
                 <span th:text="${flight.status}"
                       th:classappend="'status-badge status-' + ${flight.status.toLowerCase()}">Status</span>
             </p>
             <form th:action="@{/cancel-order}" method="post" th:if="${flight.status.toLowerCase() != 'canceled'}">
                 <input type="hidden" name="flightOrderId" th:value="${flight.id}" />
+                <input type="hidden" name="prevPage" th:value="${'bookings'}"/>
                 <button type="submit" class="cancel-button">Cancel Flight</button>
             </form>
         </div>
