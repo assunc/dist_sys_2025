@@ -194,27 +194,12 @@ public class BrokerController {
 
         model.addAttribute("isLoggedIn", isLoggedIn);
         model.addAttribute("flights", flights);
-        model.addAttribute("contentTemplate", "flights"); // 👈 Fix added!
+        model.addAttribute("contentTemplate", "flights");
 
         return "layout";
     }
 
 
-//    @GetMapping("/flight-info/{id}")
-//    public String flightDetails(@PathVariable Long id, Model model) throws IOException, InterruptedException, URISyntaxException {
-//        HttpRequest request = HttpRequest.newBuilder()
-//                .uri(new URI("http://localhost:8081/flights/" + id))
-//                .GET()
-//                .build();
-//
-//        HttpClient client = HttpClient.newHttpClient();
-//        HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
-//
-//        ObjectMapper mapper = new ObjectMapper();
-//        Airline flight = mapper.readValue(response.body(), Airline.class);
-//        model.addAttribute("flight", flight);
-//        return "flight-info";
-//    }
 
     @GetMapping("/flight-info/{id}")
     public String flightDetails(@AuthenticationPrincipal OidcUser user, @PathVariable Long id, Model model) throws IOException, InterruptedException, URISyntaxException {
@@ -317,7 +302,6 @@ public class BrokerController {
 
         boolean isLoggedIn = user != null;
 
-        // STEP 1: Create and save broker-side Order
         Order newOrder = new Order(
                 isLoggedIn ? userService.findOrCreateFromOidcUser(user) : null,
                 billingStreet + ", " + billingCity + ", " + billingPostalCode + ", " + billingCountry,
@@ -326,27 +310,22 @@ public class BrokerController {
         );
         orderRepository.save(newOrder);
 
-        // STEP 2: Loop over each seat and create bookings + flight orders
         for (Integer seatId : selectedSeatIds) {
-            // 2a. Reserve seat
             HttpRequest reserveRequest = HttpRequest.newBuilder()
                     .uri(new URI("http://dsg.centralindia.cloudapp.azure.com:8081/seats/" + seatId + "/reserve"))
                     .PUT(HttpRequest.BodyPublishers.noBody())
                     .build();
             HttpResponse<String> reserveResponse = client.send(reserveRequest, HttpResponse.BodyHandlers.ofString());
 
-            // 2b. Create booking
             HttpRequest bookingRequest = HttpRequest.newBuilder()
-                    .uri(new URI("http://dsg.centralindia.cloudapp.azure.com:8081/bookings?seatId=" + seatId + "&status=BOOKED"))
+                    .uri(new URI("http://dsg.centralindia.cloudapp.azure.com:8081/bookings?seatId=" + seatId + "&status=booked"))
                     .POST(HttpRequest.BodyPublishers.noBody())
                     .build();
             HttpResponse<String> bookingResponse = client.send(bookingRequest, HttpResponse.BodyHandlers.ofString());
 
-            // 2c. Extract bookingId
             JsonNode bookingJson = mapper.readTree(bookingResponse.body());
             long bookingId = bookingJson.get("id").asLong();
 
-            // 2d. Get seat info from supplier
             HttpRequest seatRequest = HttpRequest.newBuilder()
                     .uri(new URI("http://dsg.centralindia.cloudapp.azure.com:8081/seats/" + seatId))
                     .GET()
@@ -355,9 +334,8 @@ public class BrokerController {
             JsonNode seatJson = mapper.readTree(seatResponse.body());
 
             String seatNumber = seatJson.get("seatNumber").asText();
-            long flightId = seatJson.get("flightNumber").asLong(); // adjust if field is nested
+            long flightId = seatJson.get("flightNumber").asLong();
 
-            // 2e. Get flight info from supplier
             HttpRequest flightRequest = HttpRequest.newBuilder()
                     .uri(new URI("http://dsg.centralindia.cloudapp.azure.com:8081/flights/" + flightId))
                     .GET()
@@ -367,27 +345,26 @@ public class BrokerController {
 
             String source = flightJson.get("source").asText();
             String destination = flightJson.get("destination").asText();
-            String flightCode = flightJson.get("flightNumber").asText(); // adjust field if needed
+            String flightCode = flightJson.get("flightNumber").asText();
 
             String formattedFlightNumber = source + "-" + destination + "-" + flightCode;
 
-            // 2f. Create FlightOrder
             FlightOrder flightOrder = new FlightOrder();
             flightOrder.setOrder(newOrder);
             flightOrder.setSeatNumber(seatNumber);
             flightOrder.setFlightNumber(formattedFlightNumber);
             flightOrder.setBookingId(bookingId);
             flightOrder.setStatus("booked");
-            flightOrder.setAirlineSupplier(null); // set later if needed
+            flightOrder.setAirlineSupplier(null);
 
             flightOrders.add(flightOrder);
             responses.add("Seat " + seatNumber + " on " + formattedFlightNumber + " reserved. Booking ID: " + bookingId);
         }
 
-        // STEP 3: Save all flight orders
+
         flightOrderRepository.saveAll(flightOrders);
 
-        // STEP 4: Prepare frontend
+
         model.addAttribute("reservationResponses", responses);
         model.addAttribute("isLoggedIn", isLoggedIn);
         model.addAttribute("contentTemplate", "final-payment");
@@ -662,7 +639,7 @@ public class BrokerController {
         boolean isLoggedIn = user != null;
         model.addAttribute("isLoggedIn", isLoggedIn);
         model.addAttribute("title", "Process Reservation");
-        model.addAttribute("contentTemplate", "confirmation");
+        model.addAttribute("contentTemplate", "final-payment");  //Confirmation
 
         SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
 
