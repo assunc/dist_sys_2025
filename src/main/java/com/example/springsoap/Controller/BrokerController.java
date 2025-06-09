@@ -5,17 +5,10 @@ import com.example.springsoap.Entities.FlightOrder;
 import com.example.springsoap.Entities.Order;
 import com.example.springsoap.Entities.User;
 import com.example.springsoap.FlightService;
-import com.example.springsoap.Model.Airline;
+import com.example.springsoap.Model.*;
 
 import com.example.springsoap.Entities.*;
 
-import com.example.springsoap.Model.Hotel;
-import com.example.springsoap.Model.Reservation;
-import com.example.springsoap.Model.Room;
-
-import com.example.springsoap.Model.Seat;
-
-import com.example.springsoap.Model.RoomReservation;
 import com.example.springsoap.Repository.AirlineSupplierRepository;
 import com.example.springsoap.Repository.HotelOrderRepository;
 
@@ -30,23 +23,14 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.format.annotation.DateTimeFormat;
-import org.springframework.http.HttpEntity;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
 
 import com.example.springsoap.HotelService;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.format.annotation.DateTimeFormat;
-import org.springframework.security.access.prepost.PreAuthorize;
 
 import org.springframework.web.bind.annotation.*;
 import org.springframework.security.oauth2.core.oidc.user.OidcUser;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
-
-import org.springframework.web.client.RestTemplate;
 
 
 import java.io.IOException;
@@ -58,14 +42,9 @@ import java.net.http.HttpResponse;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 
-import java.time.Duration;
-import java.time.Instant;
 import java.util.*;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
-import java.util.stream.Collectors;
-
-import java.util.*;
 
 
 @Controller
@@ -132,7 +111,7 @@ public class BrokerController {
     public String flights(@AuthenticationPrincipal OidcUser user, Model model) throws URISyntaxException, IOException, InterruptedException {
         boolean isLoggedIn = user != null;
 
-        List<Airline> flights = flightService.getAllFlights();
+        List<Flight> flights = flightService.getAllFlights();
 
         model.addAttribute("title", "Flights");
         model.addAttribute("flights", flights);
@@ -155,7 +134,7 @@ public class BrokerController {
         String encodedSource = URLEncoder.encode(source, StandardCharsets.UTF_8);
         String encodedDestination = URLEncoder.encode(destination, StandardCharsets.UTF_8);
         String encodedDate = URLEncoder.encode(dateStr, StandardCharsets.UTF_8);
-        List<Airline> flights = flightService.searchFlights(encodedSource, encodedDestination, encodedDate);
+        List<Flight> flights = flightService.searchFlights(encodedSource, encodedDestination, encodedDate);
 
         model.addAttribute("departure_date", departureDate);
         model.addAttribute("source", source);
@@ -172,7 +151,7 @@ public class BrokerController {
     public String flightDetails(@AuthenticationPrincipal OidcUser user, @PathVariable Long id, Model model) throws IOException, InterruptedException, URISyntaxException {
         boolean isLoggedIn = user != null;
 
-        Airline flight = flightService.getFlightById(id);
+        Flight flight = flightService.getFlightById(id);
         model.addAttribute("flight", flight);
         model.addAttribute("contentTemplate", "flight-info");
         model.addAttribute("isLoggedIn", isLoggedIn);
@@ -194,7 +173,7 @@ public class BrokerController {
         String seatsJson = mapper.writeValueAsString(seats);
 
         // Fetch flight details
-        Airline flight = flightService.getFlightById(flightNumber);
+        Flight flight = flightService.getFlightById(flightNumber);
 
         model.addAttribute("classType", classType);
         model.addAttribute("flightNumber", flightNumber);
@@ -204,25 +183,6 @@ public class BrokerController {
         model.addAttribute("isLoggedIn", user != null);
         model.addAttribute("contentTemplate", "flightBooking");
 
-        return "layout";
-    }
-
-    @PostMapping("/payment-page-flight")
-    public String showPaymentPage(
-            @AuthenticationPrincipal OidcUser user,
-            @RequestParam("allSeatsJson") String allSeatsJson,
-            @RequestParam("selectedSeatIndices") List<Integer> selectedIndices,
-            Model model) throws JsonProcessingException {
-
-        ObjectMapper mapper = new ObjectMapper();
-        List<Seat> allSeats = mapper.readValue(allSeatsJson, new TypeReference<List<Seat>>() {});
-        List<Seat> selectedSeats = selectedIndices.stream()
-                .map(allSeats::get)
-                .collect(Collectors.toList());
-
-        model.addAttribute("selectedSeats", selectedSeats);
-        model.addAttribute("isLoggedIn", user != null);
-        model.addAttribute("contentTemplate", "payment-page-flight");
         return "layout";
     }
 
@@ -362,25 +322,8 @@ public class BrokerController {
         model.addAttribute("isLoggedIn", isLoggedIn);
         model.addAttribute("title", "Payment Information");
 
-        SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
-        Date startDate, endDate;
-        try {
-            startDate = dateFormat.parse(allRequestParams.get("startDate"));
-            endDate = dateFormat.parse(allRequestParams.get("endDate"));
-        } catch (ParseException e) {
-            throw new RuntimeException(e);
-        }
-        // Iterate through all request parameters to find selected room checkboxes
-        // And the value is "on" when checked.
-        for (Map.Entry<String, String> entry : allRequestParams.entrySet()) {
-            if (entry.getKey().startsWith("Room") && entry.getValue().equals("on")) {
-                reservation.addRoomReservation(new RoomReservation(
-                        new Room(entry.getKey()),
-                        allRequestParams.get("name"),
-                        startDate, endDate
-                ));
-            }
-        }
+        hotelService.addHotelReservations(allRequestParams, reservation);
+        flightService.addFlightReservations(allRequestParams, reservation);
 
         return "redirect:/shopping-cart";
     }
@@ -392,27 +335,8 @@ public class BrokerController {
         model.addAttribute("title", "Payment Information");
         model.addAttribute("contentTemplate", "payment");
 
-        SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
-        Date startDate, endDate;
-        if (allRequestParams.containsKey("startDate") && allRequestParams.containsKey("endDate")) {
-            try {
-                startDate = dateFormat.parse(allRequestParams.get("startDate"));
-                endDate = dateFormat.parse(allRequestParams.get("endDate"));
-            } catch (ParseException e) {
-                throw new RuntimeException(e);
-            }
-            // Iterate through all request parameters to find selected room checkboxes
-            // And the value is "on" when checked.
-            for (Map.Entry<String, String> entry : allRequestParams.entrySet()) {
-                if (entry.getKey().startsWith("Room") && entry.getValue().equals("on")) {
-                    reservation.addRoomReservation(new RoomReservation(
-                            new Room(entry.getKey()),
-                            allRequestParams.get("name"),
-                            startDate, endDate
-                    ));
-                }
-            }
-        }
+        hotelService.addHotelReservations(allRequestParams, reservation);
+        flightService.addFlightReservations(allRequestParams, reservation);
 
         model.addAttribute("reservation", reservation);
 
@@ -458,7 +382,6 @@ public class BrokerController {
 
     @PostMapping("/process-reservation")
     public String processReservation(
-            @RequestParam(value = "selectedSeatIds", required = false) List<Integer> selectedSeatIds, // for flights
             @RequestParam("cardNumber") String cardNumber,
             @RequestParam("expirationMonth") int expirationMonth,
             @RequestParam("expirationYear") int expirationYear,
@@ -503,8 +426,9 @@ public class BrokerController {
             }
         }
 
-        if (selectedSeatIds != null && !selectedSeatIds.isEmpty()) {
-            List<FlightOrder> bookedFlights = flightService.bookSeats(selectedSeatIds, newOrder);
+        if (!reservation.getFlightReservations().isEmpty()) {
+            List<Long> seatIds = reservation.getFlightReservations().stream().map(FlightReservation::getSeatId).toList();
+            List<FlightOrder> bookedFlights = flightService.bookSeats(seatIds, newOrder);
             flightOrders.addAll(bookedFlights);
         }
 
@@ -587,7 +511,7 @@ public class BrokerController {
             User currentUser = userService.findOrCreateFromOidcUser(user);
             List<Order> userOrders = orderRepository.findByUser(currentUser);
 
-            // ✅ Hotel Orders
+            // Hotel Orders
             List<HotelOrder> userHotelOrders = new ArrayList<>();
             for (Order order : userOrders) {
                 userHotelOrders.addAll(hotelOrderRepository.findByOrder(order));
@@ -595,7 +519,7 @@ public class BrokerController {
             userHotelOrders.sort(Comparator.comparing(HotelOrder::getStartDate));
             model.addAttribute("hotelOrders", userHotelOrders);
 
-            // ✅ Flight Orders
+            // Flight Orders
             List<FlightOrder> userFlightOrders = flightOrderRepository.findByOrderIn(userOrders);
             HttpClient client = HttpClient.newHttpClient();
             ObjectMapper mapper = new ObjectMapper();

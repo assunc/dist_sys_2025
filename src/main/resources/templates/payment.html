@@ -157,7 +157,7 @@
     <div class="grid-container">
         <!-- Reservation Summary -->
         <div class="reservation-summary">
-            <h4>Your Room Reservations</h4>
+            <h4 th:unless="${reservation.roomReservations.isEmpty()}">Your Room Reservations</h4>
             <div th:each="roomReservation : ${reservation.roomReservations}" class="reservation-card">
                 <h6>
                     Room <span th:text="${roomReservation.room.number}">[Room Number]</span>,
@@ -167,6 +167,16 @@
                 <small>
                     Check-in: <span th:text="${#dates.format(roomReservation.startDate, 'dd MMM yyyy')}">01 Jan 2023</span><br>
                     Check-out: <span th:text="${#dates.format(roomReservation.endDate, 'dd MMM yyyy')}">03 Jan 2023</span>
+                </small>
+            </div>
+            <h4 th:unless="${reservation.flightReservations.isEmpty()}">Your Flight Reservations</h4>
+            <div th:each="flightReservation : ${reservation.flightReservations}" class="reservation-card">
+                <h6>Flight to <span th:text="${flightReservation.flight.destination}">[Destination]</span></h6>
+                <p><strong>Seat: <span th:text="${flightReservation.seatNumber}">[SeatNumber]</span></strong></p>
+                <small>
+                    Departure: <span th:text="${#dates.format(flightReservation.flight.departureTime, 'dd MMM yyyy HH:mm')}">[Departure Time]</span><br>
+                    Arrival: <span th:text="${#dates.format(flightReservation.flight.arrivalTime, 'dd MMM yyyy HH:mm')}">[Arrival Time]</span><br>
+                    From: <span th:text="${flightReservation.flight.source}">[Source]</span>
                 </small>
             </div>
         </div>

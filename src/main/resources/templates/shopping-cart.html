@@ -26,10 +26,38 @@
         <h4>Flight Bookings</h4>
         <ul style="list-style: none; padding: 0;">
           <li th:each="flightRes : ${reservation.flightReservations}" style="border: 1px solid #ddd; margin-bottom: 10px; padding: 10px;">
-            <strong>Flight Number:</strong> <span th:text="${flightRes.flightId}"></span><br/>
+
+            <!-- LEFT section: Timeline and details -->
+            <div style="flex: 1.2;">
+              <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
+                <!-- Departure -->
+                <div style="text-align: left;">
+                  <div style="font-weight: bold;" th:text="${#dates.format(flightRes.flight.departureTime, 'HH:mm')}"></div>
+                  <div style="font-size: 13px; color: #555;" th:text="${flightRes.flight.source}"></div>
+                </div>
+
+                <!-- Timeline with badge -->
+                <div style="flex: 1; margin: 0 12px; max-width: 300px;">
+                  <div style="display: flex; align-items: center; justify-content: center;">
+                    <div style="width: 8px; height: 8px; border: 2px solid black; border-radius: 50%; background: white;"></div>
+                    <div style="flex: 1; height: 2px; background: black;"></div>
+                    <div style="margin: 0 8px; padding: 2px 10px; background: green; color: white; font-size: 12px; border-radius: 6px;">Direct</div>
+                    <div style="flex: 1; height: 2px; background: black;"></div>
+                    <div style="width: 8px; height: 8px; border: 2px solid black; border-radius: 50%; background: white;"></div>
+                  </div>
+                </div>
+
+                <!-- Arrival -->
+                <div style="text-align: right;">
+                  <div style="font-weight: bold;" th:text="${#dates.format(flightRes.flight.arrivalTime, 'HH:mm')}"></div>
+                  <div style="font-size: 13px; color: #555;" th:text="${flightRes.flight.destination}"></div>
+                </div>
+              </div>
+
+              <!-- Plane model -->
+              <div style="font-size: 14px; color: #777;" th:text="'Plane: ' + ${flightRes.flight.planeModel}"></div>
+            </div>
             <strong>Seat:</strong> <span th:text="${flightRes.seatNumber}"></span><br/>
-<!--            <strong>Route:</strong> <span th:text="${flightRes.departureAirport}"></span> to <span th:text="${flightRes.arrivalAirport}"></span><br/>-->
-<!--            <strong>Departure Date:</strong> <span th:text="${flightRes.departureDate}"></span><br/>-->
           </li>
         </ul>
       </div>

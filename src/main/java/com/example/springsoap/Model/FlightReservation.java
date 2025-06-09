@@ -1,19 +1,25 @@
 package com.example.springsoap.Model;
 
 public class FlightReservation {
-    private final int flightNumber;
+    private final Flight flight;
     private final String seatNumber;
+    private final Long seatId;
 
-    public FlightReservation(int flightNumber, String seatNumber) {
-        this.flightNumber = flightNumber;
+    public FlightReservation(Flight flight, String seatNumber, Long seatId) {
+        this.flight = flight;
         this.seatNumber = seatNumber;
+        this.seatId = seatId;
     }
 
-    public int getFlightNumber() {
-        return flightNumber;
+    public Flight getFlight() {
+        return flight;
     }
 
     public String getSeatNumber() {
         return seatNumber;
+    }
+
+    public Long getSeatId() {
+        return seatId;
     }
 }

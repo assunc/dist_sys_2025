@@ -3,6 +3,7 @@ package com.example.springsoap;
 import com.example.springsoap.Entities.HotelOrder;
 import com.example.springsoap.Entities.Order;
 import com.example.springsoap.Model.Hotel;
+import com.example.springsoap.Model.Reservation;
 import com.example.springsoap.Model.Room;
 import com.example.springsoap.Model.RoomReservation;
 import com.example.springsoap.Repository.*;
@@ -22,12 +23,14 @@ import javax.xml.xpath.XPath;
 import javax.xml.xpath.XPathConstants;
 import javax.xml.xpath.XPathFactory;
 import java.io.StringReader;
+import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Date;
+import java.util.Map;
 
 @Service
 public class HotelService {
@@ -337,5 +340,28 @@ public class HotelService {
             order.setStatus(status);
         }
         return allBookingsCanceled;
+    }
+
+    public void addHotelReservations(Map<String, String> allRequestParams, Reservation reservation) {
+        Date startDate, endDate;
+        if (allRequestParams.containsKey("startDate") && allRequestParams.containsKey("endDate")) {
+            try {
+                startDate = dateFormat.parse(allRequestParams.get("startDate"));
+                endDate = dateFormat.parse(allRequestParams.get("endDate"));
+            } catch (ParseException e) {
+                throw new RuntimeException(e);
+            }
+            // Iterate through all request parameters to find selected room checkboxes
+            // And the value is "on" when checked.
+            for (Map.Entry<String, String> entry : allRequestParams.entrySet()) {
+                if (entry.getKey().startsWith("Room") && entry.getValue().equals("on")) {
+                    reservation.addRoomReservation(new RoomReservation(
+                            new Room(entry.getKey()),
+                            allRequestParams.get("name"),
+                            startDate, endDate
+                    ));
+                }
+            }
+        }
     }
 }
