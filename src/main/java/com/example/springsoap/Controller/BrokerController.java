@@ -134,7 +134,6 @@ public class BrokerController {
 
         List<Airline> flights = flightService.getAllFlights();
 
-
         model.addAttribute("title", "Flights");
         model.addAttribute("flights", flights);
         model.addAttribute("isLoggedIn", isLoggedIn);
@@ -142,12 +141,9 @@ public class BrokerController {
         return "layout";
     }
 
-
-
-
     @PostMapping("/flights")
     public String searchFlights(@AuthenticationPrincipal OidcUser user,
-                                @RequestParam("departure_time") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) Date departureDate,
+                                @RequestParam("departure_date") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) Date departureDate,
                                 @RequestParam("source") String source,
                                 @RequestParam("destination") String destination,
                                 Model model) throws IOException, InterruptedException, URISyntaxException {
@@ -160,6 +156,10 @@ public class BrokerController {
         String encodedDestination = URLEncoder.encode(destination, StandardCharsets.UTF_8);
         String encodedDate = URLEncoder.encode(dateStr, StandardCharsets.UTF_8);
         List<Airline> flights = flightService.searchFlights(encodedSource, encodedDestination, encodedDate);
+
+        model.addAttribute("departure_date", departureDate);
+        model.addAttribute("source", source);
+        model.addAttribute("destination", destination);
 
         model.addAttribute("isLoggedIn", isLoggedIn);
         model.addAttribute("flights", flights);
@@ -178,7 +178,6 @@ public class BrokerController {
         model.addAttribute("isLoggedIn", isLoggedIn);
         return "layout";
     }
-
 
     @GetMapping("/book/{classType}/{flightNumber}")
     public String bookSeat(@AuthenticationPrincipal OidcUser user,
@@ -207,8 +206,6 @@ public class BrokerController {
 
         return "layout";
     }
-
-
 
     @PostMapping("/payment-page-flight")
     public String showPaymentPage(
@@ -260,19 +257,6 @@ public class BrokerController {
             return "error";
         }
     }
-
-
-
-
-
-
-
-
-
-
-
-
-
 
     @GetMapping("/hotels")
     public String hotels(@AuthenticationPrincipal OidcUser user, Model model) {

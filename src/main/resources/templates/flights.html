@@ -8,7 +8,7 @@
             <!-- FROM -->
             <div style="display: flex; align-items: center; background-color: #f2f2f2; padding: 10px 12px; border-radius: 8px; flex: 1;">
                 <i class="fa-solid fa-plane-departure" style="margin-right: 8px; font-size: 18px; color: #555;"></i>
-                <input type="text" name="source" placeholder="From" style="border: none; background: transparent; outline: none; font-size: 16px; width: 100%;">
+                <input type="text" name="source" placeholder="From" th:value="${source}" style="border: none; background: transparent; outline: none; font-size: 16px; width: 100%;">
             </div>
 
             <!-- SWAP BUTTON -->
@@ -19,13 +19,13 @@
             <!-- TO -->
             <div style="display: flex; align-items: center; background-color: #f2f2f2; padding: 10px 12px; border-radius: 8px; flex: 1;">
                 <i class="fa-solid fa-location-dot" style="margin-right: 8px; font-size: 18px; color: #555;"></i>
-                <input type="text" name="destination" placeholder="To" style="border: none; background: transparent; outline: none; font-size: 16px; width: 100%;">
+                <input type="text" name="destination" th:value="${destination}" placeholder="To" style="border: none; background: transparent; outline: none; font-size: 16px; width: 100%;">
             </div>
 
             <!-- DATE -->
             <div style="display: flex; align-items: center; background-color: #f2f2f2; padding: 10px 12px; border-radius: 8px; flex: 1;">
                 <i class="fa-solid fa-calendar-days" style="margin-right: 8px; font-size: 18px; color: #555;"></i>
-                <input type="date" name="departure_time" style="border: none; background: white; outline: none; font-size: 16px; border-radius: 6px; padding: 6px; flex: 1;">
+                <input type="date" name="departure_date" th:value="${#dates.format(departure_date, 'yyyy-MM-dd')}" required style="border: none; background: white; outline: none; font-size: 16px; border-radius: 6px; padding: 6px; flex: 1;">
             </div>
 
             <!-- SEARCH BUTTON -->
