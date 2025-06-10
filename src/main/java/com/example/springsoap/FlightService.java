@@ -23,12 +23,13 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Service
 public class FlightService {
     private final HttpClient client = HttpClient.newHttpClient();
     private final ObjectMapper mapper = new ObjectMapper();
-    private static final String BASE_URL = "http://dsg.centralindia.cloudapp.azure.com:8081";
+    private static final String BASE_URL = "http://localhost:8081";
 
     public List<FlightOrder> bookSeats(List<Long> seatIds, Order order) throws IOException, InterruptedException, URISyntaxException {
         List<FlightOrder> flightOrders = new ArrayList<>();
@@ -84,6 +85,107 @@ public class FlightService {
 
         return flightOrders;
     }
+    public boolean reserveSeats(List<Long> seatIds, Order order, List<FlightOrder> flightOrders) throws IOException, InterruptedException, URISyntaxException {
+        boolean allPending = true;
+
+        for (Long seatId : seatIds) {
+            System.out.println("Seat IDs for reserving "+seatIds);
+            // Step 1: Reserve the seat
+            HttpRequest reserveRequest = HttpRequest.newBuilder()
+                    .uri(new URI(BASE_URL + "/seats/" + seatId + "/reserve"))
+                    .PUT(HttpRequest.BodyPublishers.noBody())
+                    .build();
+            HttpResponse<String> reserveResponse= client.send(reserveRequest, HttpResponse.BodyHandlers.ofString());
+            System.out.println("Reserve Response: "+reserveResponse.body());
+
+
+            // Step 2: Create booking with status=pending
+            System.out.println("SeatID before the booking: "+seatId);
+            HttpRequest bookingRequest = HttpRequest.newBuilder()
+                    .uri(new URI(BASE_URL + "/bookings?seatId=" + seatId + "&status=pending"))
+                    .POST(HttpRequest.BodyPublishers.noBody())
+                    .build();
+            HttpResponse<String> bookingResponse = client.send(bookingRequest, HttpResponse.BodyHandlers.ofString());
+            System.out.println("Booking Response: "+bookingResponse.body());
+            JsonNode bookingJson = mapper.readTree(bookingResponse.body());
+            long bookingId = bookingJson.get("id").asLong();
+            System.out.println("Booking ID: "+bookingId);
+
+            // Step 3: Get seat and flight info
+            HttpRequest seatRequest = HttpRequest.newBuilder()
+                    .uri(new URI(BASE_URL + "/seats/" + seatId))
+                    .GET()
+                    .build();
+            HttpResponse<String> seatResponse = client.send(seatRequest, HttpResponse.BodyHandlers.ofString());
+            JsonNode seatJson = mapper.readTree(seatResponse.body());
+            String seatNumber = seatJson.get("seatNumber").asText();
+            long flightId = seatJson.get("flightNumber").asLong();
+            System.out.println("Flight Number: " + flightId);
+
+            HttpRequest flightRequest = HttpRequest.newBuilder()
+                    .uri(new URI(BASE_URL + "/flights/" + flightId))
+                    .GET()
+                    .build();
+            HttpResponse<String> flightResponse = client.send(flightRequest, HttpResponse.BodyHandlers.ofString());
+            JsonNode flightJson = mapper.readTree(flightResponse.body());
+            String source = flightJson.get("source").asText();
+            String destination = flightJson.get("destination").asText();
+            String flightCode = flightJson.get("flightNumber").asText();
+
+            String formattedFlightNumber = source + "-" + destination + "-" + flightCode;
+
+            // Step 4: Create and collect FlightOrder
+            FlightOrder flightOrder = new FlightOrder();
+            flightOrder.setOrder(order);
+            flightOrder.setSeatNumber(seatNumber);
+            flightOrder.setFlightNumber(formattedFlightNumber);
+            flightOrder.setBookingId(bookingId);
+            flightOrder.setStatus("pending");
+            flightOrder.setAirlineSupplier(null);
+
+            flightOrders.add(flightOrder);
+        }
+
+        // Ensure all are pending
+        for (FlightOrder fo : flightOrders) {
+            if (!"pending".equalsIgnoreCase(fo.getStatus())) {
+                allPending = false;
+                break;
+            }
+        }
+        System.out.println("All Pending orders: "+allPending);
+
+        return allPending;
+    }
+
+
+    public boolean confirmSeats(Order order, List<FlightOrder> flightOrders) throws IOException, InterruptedException, URISyntaxException {
+        boolean allBooked = true;
+
+        for (FlightOrder flightOrder : flightOrders) {
+            long bookingId = flightOrder.getBookingId();
+            System.out.println("Flight Order in confirm seats: "+ bookingId);
+            HttpRequest confirmRequest = HttpRequest.newBuilder()
+                    .uri(new URI(BASE_URL + "/bookings/" + bookingId + "/confirm"))
+                    .PUT(HttpRequest.BodyPublishers.noBody())
+                    .build();
+            HttpResponse<String> confirmResponse = client.send(confirmRequest, HttpResponse.BodyHandlers.ofString());
+            System.out.println("Confirm response.............. "+confirmResponse.body());
+            if (confirmResponse.statusCode() == 200) {
+                flightOrder.setStatus("booked");
+            } else {
+                allBooked = false;
+            }
+        }
+
+        if (allBooked) {
+            order.setStatus("booked");
+        }
+
+        return allBooked;
+    }
+
+
 
     public List<Flight> getAllFlights() throws IOException, InterruptedException, URISyntaxException {
         HttpRequest request = HttpRequest.newBuilder()
@@ -105,18 +207,37 @@ public class FlightService {
         return flights;
     }
 
-    public List<Flight> searchFlights(String source, String destination, String dateStr) throws IOException, InterruptedException, URISyntaxException {
-        String encodedSource = java.net.URLEncoder.encode(source, java.nio.charset.StandardCharsets.UTF_8);
-        String encodedDestination = java.net.URLEncoder.encode(destination, java.nio.charset.StandardCharsets.UTF_8);
-        String encodedDate = java.net.URLEncoder.encode(dateStr, java.nio.charset.StandardCharsets.UTF_8);
+    public List<Flight> searchFlights(String source, String destination, String date)
+            throws IOException, InterruptedException, URISyntaxException {
+
+        // Always fetch all flights (bypass strict supplier filters)
+        String uri = BASE_URL + "/flights";
 
         HttpRequest request = HttpRequest.newBuilder()
-                .uri(new URI(BASE_URL + "/flights/searchByDateAndRoute?source=" + encodedSource + "&destination=" + encodedDestination + "&departureDate=" + encodedDate))
+                .uri(new URI(uri))
                 .GET()
                 .build();
+
         HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
-        return mapper.readValue(response.body(), new TypeReference<>() {});
+        List<Flight> allFlights = mapper.readValue(response.body(), new TypeReference<>() {});
+
+        // Normalize search terms
+        String srcFilter = source != null ? source.toLowerCase() : "";
+        String destFilter = destination != null ? destination.toLowerCase() : "";
+        String dateFilter = date != null ? date.trim() : "";
+
+        // Apply local filtering
+        return allFlights.stream()
+                .filter(f -> srcFilter.isEmpty() || f.getSource().toLowerCase().contains(srcFilter))
+                .filter(f -> destFilter.isEmpty() || f.getDestination().toLowerCase().contains(destFilter))
+                .filter(f -> {
+                    if (dateFilter.isEmpty()) return true;
+                    String flightDate = f.getDepartureTime().toLocalDateTime().toLocalDate().toString();
+                    return flightDate.equals(dateFilter);
+                })
+                .collect(Collectors.toList());
     }
+
 
     public Flight getFlightById(Long id) throws IOException, InterruptedException, URISyntaxException {
         HttpRequest request = HttpRequest.newBuilder()
@@ -145,6 +266,28 @@ public class FlightService {
         HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
         return response.statusCode() == 200;
     }
+    public boolean cancelBookings(List<FlightOrder> flightOrders) throws IOException, InterruptedException, URISyntaxException {
+        boolean allCancelled = true;
+
+        for (FlightOrder flightOrder : flightOrders) {
+            long bookingId = flightOrder.getBookingId();
+            HttpRequest cancelRequest = HttpRequest.newBuilder()
+                    .uri(new URI(BASE_URL + "/bookings/" + bookingId + "/cancel"))
+                    .PUT(HttpRequest.BodyPublishers.noBody())
+                    .build();
+            HttpResponse<String> cancelResponse = client.send(cancelRequest, HttpResponse.BodyHandlers.ofString());
+
+            if (cancelResponse.statusCode() == 200) {
+                flightOrder.setStatus("cancelled");
+            } else {
+                allCancelled = false;
+            }
+        }
+
+        return allCancelled;
+    }
+
+
 
     public void addFlightReservations(Map<String, String> allRequestParams, Reservation reservation) {
         if (allRequestParams.containsKey("allSeatsJson")) {

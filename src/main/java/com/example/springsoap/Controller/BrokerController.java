@@ -218,6 +218,11 @@ public class BrokerController {
         }
     }
 
+
+
+
+
+
     @GetMapping("/hotels")
     public String hotels(@AuthenticationPrincipal OidcUser user, Model model) {
         boolean isLoggedIn = user != null;
@@ -396,9 +401,7 @@ public class BrokerController {
         boolean isLoggedIn = user != null;
         model.addAttribute("isLoggedIn", isLoggedIn);
         model.addAttribute("title", "Process Reservation");
-        model.addAttribute("contentTemplate", "final-payment");  //Confirmation
-
-        SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
+        model.addAttribute("contentTemplate", "final-payment"); //Confirmation
 
         Order newOrder = new Order(
                 isLoggedIn ? userService.findOrCreateFromOidcUser(user) : null,
@@ -410,11 +413,13 @@ public class BrokerController {
         List<HotelOrder> hotelOrders = new ArrayList<>();
         List<FlightOrder> flightOrders = new ArrayList<>();
 
-        // Two stage commit
+        // --- Two-phase commit flags ---
         boolean allBookingsPending = true;
         boolean allBookingsBooked = true;
         boolean allBookingsCanceled = false;
 
+        // --- Phase 1: Reserve ---
+        // Hotel
         if (!reservation.getRoomReservations().isEmpty()) {
             try {
                 allBookingsPending = hotelService.reserveOrders(reservation.getRoomReservations(), newOrder, hotelOrders);
@@ -426,16 +431,24 @@ public class BrokerController {
             }
         }
 
+
         if (!reservation.getFlightReservations().isEmpty()) {
             List<Long> seatIds = reservation.getFlightReservations().stream().map(FlightReservation::getSeatId).toList();
-            List<FlightOrder> bookedFlights = flightService.bookSeats(seatIds, newOrder);
-            flightOrders.addAll(bookedFlights);
+            try {
+                allBookingsPending &= flightService.reserveSeats(seatIds, newOrder, flightOrders);
+                model.addAttribute("error", false);
+            } catch (Exception e) {
+                System.err.println("Flight reservation error: " + e.getMessage());
+                e.printStackTrace();
+                model.addAttribute("error", "Error during flight reservation.");
+            }
         }
 
-        // save stage 1 of commit
+        // Save phase 1 orders
         orderRepository.save(newOrder);
         hotelOrderRepository.saveAll(hotelOrders);
         flightOrderRepository.saveAll(flightOrders);
+
 
         if (allBookingsPending) { // Stage 2
             if (!reservation.getRoomReservations().isEmpty()) {
@@ -448,39 +461,55 @@ public class BrokerController {
                     model.addAttribute("error", "Error searching for hotels: " + e.getMessage());
                 }
             }
-            if (!reservation.getFlightReservations().isEmpty()) {
-                // add stage 2 of commit here
-            }
-        }
 
-        if (!allBookingsPending || !allBookingsBooked) { // Abort
-            if (!reservation.getRoomReservations().isEmpty()) {
+            // Flight
+            if (!flightOrders.isEmpty()) {
                 try {
-                    allBookingsCanceled = hotelService.cancelOrders(newOrder, hotelOrders);
+                    allBookingsBooked &= flightService.confirmSeats(newOrder, flightOrders);
                     model.addAttribute("error", false);
                 } catch (Exception e) {
-                    System.err.println("Exception during booking search: " + e.getMessage());
-                    e.printStackTrace(); // Print full stack trace for detailed debugging
-                    model.addAttribute("error", "Error searching for hotels: " + e.getMessage());
+                    System.err.println("Flight confirmation error: " + e.getMessage());
+                    e.printStackTrace();
+                    model.addAttribute("error", "Error confirming flight booking.");
+                    allBookingsBooked = false;
                 }
-            }
-            if (!reservation.getFlightReservations().isEmpty()) {
-                // add abort of commit here
             }
         }
 
+        // --- Finalize Commit ---
         if (allBookingsBooked) {
-            // everything went well
             reservation.clear();
-            // save stage 2 of commit
             orderRepository.save(newOrder);
             hotelOrderRepository.saveAll(hotelOrders);
             flightOrderRepository.saveAll(flightOrders);
         }
 
-        if (allBookingsCanceled) {
-            // transaction aborted
-            // save abort of commit
+        // --- Abort if needed ---
+        if (!allBookingsPending || !allBookingsBooked) {
+            // Hotel cancel
+            if (!reservation.getRoomReservations().isEmpty()) {
+                try {
+                    allBookingsCanceled = hotelService.cancelOrders(newOrder, hotelOrders);
+                    model.addAttribute("error", false);
+                } catch (Exception e) {
+                    System.err.println("Hotel cancellation error: " + e.getMessage());
+                    e.printStackTrace();
+                    model.addAttribute("error", "Error cancelling hotel orders.");
+                }
+            }
+
+            // Flight cancel
+            if (!flightOrders.isEmpty()) {
+                try {
+                    allBookingsCanceled |= flightService.cancelBookings(flightOrders);
+                    model.addAttribute("error", false);
+                } catch (Exception e) {
+                    System.err.println("Flight cancellation error: " + e.getMessage());
+                    e.printStackTrace();
+                    model.addAttribute("error", "Error cancelling flight orders.");
+                }
+            }
+
             orderRepository.save(newOrder);
             hotelOrderRepository.saveAll(hotelOrders);
             flightOrderRepository.saveAll(flightOrders);
@@ -488,6 +517,8 @@ public class BrokerController {
 
         return "layout";
     }
+
+
 
     @GetMapping("/shopping-cart")
     public String viewShoppingCart(Model model, @AuthenticationPrincipal OidcUser user) {
@@ -527,7 +558,7 @@ public class BrokerController {
             for (FlightOrder flight : userFlightOrders) {
                 String flightNum = flight.getFlightNumber();
                 HttpRequest req = HttpRequest.newBuilder()
-                        .uri(new URI("http://dsg.centralindia.cloudapp.azure.com:8081/flights/flightNumber/" + flightNum))
+                        .uri(new URI("http://localhost:8081/flights/flightNumber/" + flightNum))
                         .GET()
                         .build();
                 HttpResponse<String> resp = client.send(req, HttpResponse.BodyHandlers.ofString());
