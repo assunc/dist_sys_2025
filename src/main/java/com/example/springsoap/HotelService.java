@@ -302,7 +302,7 @@ public class HotelService {
         return allBookingsBooked;
     }
 
-    public boolean cancelOrders(Order order, List<HotelOrder> hotelOrders) throws Exception {
+    public boolean cancelOrders(Order order, List<HotelOrder> hotelOrders, Boolean cancelEntireOrder) throws Exception {
         String soapRequest = soapRequestHead + """
                 <soapenv:Body>
                     <web:cancelBookingRequest>
@@ -337,7 +337,10 @@ public class HotelService {
             for (HotelOrder hotelOrder : hotelOrders) {
                 hotelOrder.setStatus(status);
             }
-            order.setStatus(status);
+            if(cancelEntireOrder) {
+                order.setStatus(status);
+            }
+
         }
         return allBookingsCanceled;
     }

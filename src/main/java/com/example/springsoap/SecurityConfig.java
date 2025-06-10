@@ -122,7 +122,7 @@ public class SecurityConfig {
             String logoutRedirect = UriComponentsBuilder
                     .fromHttpUrl("https://dev-distributed.eu.auth0.com/v2/logout")
                     .queryParam("client_id", "qNdLFytoI8f16Xe8JtFKhRohbhrqWlFn")
-                    .queryParam("returnTo", "http://localhost:8080/?loggedOut=true")
+                    .queryParam("returnTo", "http://localhost:8080/?loggedOut=true") // https://travelbroker-gggzg4fng4hyceez.westeurope-01.azurewebsites.net//?loggedOut=true
                     .build()
                     .toUriString();
 

@@ -208,8 +208,15 @@ public class BrokerController {
             flightOrderRepository.save(flightOrder);
 
             Order order = flightOrder.getOrder();
-            order.setStatus("canceled");
-            orderRepository.save(order);
+
+            boolean allFlightsCanceled = flightOrderRepository.findByOrder(order).stream()
+                    .allMatch(f -> f.getStatus().equalsIgnoreCase("canceled"));
+            boolean allHotelsCanceled = hotelOrderRepository.findByOrder(order).stream()
+                    .allMatch(h -> h.getStatus().equalsIgnoreCase("canceled"));
+            if (allFlightsCanceled && allHotelsCanceled) {
+                order.setStatus("canceled");
+                orderRepository.save(order);
+            }
 
             return "redirect:/" + prevPage;
         } else {
@@ -217,6 +224,11 @@ public class BrokerController {
             return "error";
         }
     }
+
+
+
+
+
 
 
 
@@ -489,7 +501,7 @@ public class BrokerController {
             // Hotel cancel
             if (!reservation.getRoomReservations().isEmpty()) {
                 try {
-                    allBookingsCanceled = hotelService.cancelOrders(newOrder, hotelOrders);
+                    allBookingsCanceled = hotelService.cancelOrders(newOrder, hotelOrders, true);
                     model.addAttribute("error", false);
                 } catch (Exception e) {
                     System.err.println("Hotel cancellation error: " + e.getMessage());
@@ -585,21 +597,43 @@ public class BrokerController {
                                      Model model, @AuthenticationPrincipal OidcUser user) {
         boolean isLoggedIn = (user != null);
         model.addAttribute("isLoggedIn", isLoggedIn);
-        Optional<HotelOrder> hotelOrder = hotelOrderRepository.findById(hotelOrderId);
-        if (hotelOrder.isPresent() && !hotelOrder.get().getStatus().equalsIgnoreCase("cancelled")) {
+
+        Optional<HotelOrder> hotelOrderOpt = hotelOrderRepository.findById(hotelOrderId);
+        if (hotelOrderOpt.isPresent() && !hotelOrderOpt.get().getStatus().equalsIgnoreCase("canceled")) {
+            HotelOrder hotelOrder = hotelOrderOpt.get();
+            Order order = hotelOrder.getOrder();
+
             try {
-                hotelService.cancelOrders(hotelOrder.get().getOrder(), List.of(hotelOrder.get()));
-                hotelOrderRepository.save(hotelOrder.get());
+                // Cancel only this booking
+                hotelService.cancelOrders(order, List.of(hotelOrder), false);
+
+                // Save the updated hotel order
+                hotelOrderRepository.save(hotelOrder);
+
+                // ✅ Check if ALL hotel and flight bookings for this order are canceled
+                boolean allHotelsCanceled = hotelOrderRepository.findByOrder(order).stream()
+                        .allMatch(h -> h.getStatus().equalsIgnoreCase("canceled"));
+                boolean allFlightsCanceled = flightOrderRepository.findByOrder(order).stream()
+                        .allMatch(f -> f.getStatus().equalsIgnoreCase("canceled"));
+
+                // Only now set the order as canceled
+                if (allHotelsCanceled && allFlightsCanceled) {
+                    order.setStatus("canceled");
+                    orderRepository.save(order);
+                }
+
                 model.addAttribute("error", false);
+
             } catch (Exception e) {
-                System.err.println("Exception during booking search: " + e.getMessage());
-                e.printStackTrace(); // Print full stack trace for detailed debugging
-                model.addAttribute("error", "Error searching for hotels: " + e.getMessage());
+                System.err.println("Exception during hotel cancellation: " + e.getMessage());
+                e.printStackTrace();
+                model.addAttribute("error", "Error cancelling hotel order: " + e.getMessage());
             }
         }
 
-        return "redirect:/" + prevPage; // Redirect back to the previous page
+        return "redirect:/" + prevPage;
     }
+
 
     @GetMapping("/combo")
     public String combo(@AuthenticationPrincipal OidcUser user, Model model) {
