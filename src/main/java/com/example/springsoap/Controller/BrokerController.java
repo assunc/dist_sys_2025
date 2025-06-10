@@ -501,7 +501,7 @@ public class BrokerController {
             // Flight cancel
             if (!flightOrders.isEmpty()) {
                 try {
-                    allBookingsCanceled |= flightService.cancelBookings(flightOrders);
+                    allBookingsCanceled &= flightService.cancelBookings(flightOrders);
                     model.addAttribute("error", false);
                 } catch (Exception e) {
                     System.err.println("Flight cancellation error: " + e.getMessage());

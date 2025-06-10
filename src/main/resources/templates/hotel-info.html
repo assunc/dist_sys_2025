@@ -1,6 +1,24 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org">
 <div th:fragment="content">
+    <style>
+        .submit-btn {
+            display: block;
+            width: 100%;
+            margin-top: 24px;
+            padding: 12px;
+            background-color: #0071c2;
+            color: white;
+            font-weight: 600;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+
+        .submit-btn:hover {
+            background-color: #005fa3;
+        }
+    </style>
 
     <div th:if="${hotel}" class="hotel-details-card" th:object="${hotel}" style="max-width: 960px; margin: auto; padding: 24px;">
         <div style="display: flex; justify-content: space-between; gap: 24px; flex-wrap: wrap;">
@@ -73,11 +91,11 @@
                     No rooms found for the selected criteria.
                 </p>
 
-                <div th:if="${searchPerformed}" class="mt-4" style="display: flex; max-width: 200px; margin-bottom: 80px;">
-                    <button type="submit" th:formaction="@{/add-to-cart}" class="btn btn-success w-100">
+                <div th:if="${searchPerformed}" class="mt-4" style="display: flex; gap: 10px; margin-bottom: 80px;">
+                    <button type="submit" th:formaction="@{/add-to-cart}" class="submit-btn">
                         <i class="fas fa-check"></i> Add to Shopping Cart
                     </button>
-                    <button type="submit" th:formaction="@{/payment}" class="btn btn-success w-100">
+                    <button type="submit" th:formaction="@{/payment}" class="submit-btn">
                         <i class="fas fa-check"></i> Procced to Payment
                     </button>
                 </div>
