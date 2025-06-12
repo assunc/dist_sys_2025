@@ -1,7 +1,31 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org">
 <div th:fragment="content">
-    <h2>Travel Packages</h2>
-    <p>Choose a complete travel package: flight + hotel combined.</p>
+    <h2>Search Travel Packages</h2>
+    <p>Find complete packages: Flight + Hotel (Round Trip)</p>
+
+    <form th:action="@{/combo/search}" method="post">
+        <div>
+            <label for="source">From:</label>
+            <input type="text" id="source" name="source" required>
+        </div>
+
+        <div>
+            <label for="destination">To:</label>
+            <input type="text" id="destination" name="destination" required>
+        </div>
+
+        <div>
+            <label for="startDate">Start Date:</label>
+            <input type="date" id="startDate" name="startDate" required>
+        </div>
+
+        <div>
+            <label for="endDate">End Date:</label>
+            <input type="date" id="endDate" name="endDate" required>
+        </div>
+
+        <button type="submit">Search Packages</button>
+    </form>
 </div>
 </html>

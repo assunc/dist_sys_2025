@@ -634,15 +634,63 @@ public class BrokerController {
         return "redirect:/" + prevPage;
     }
 
-
     @GetMapping("/combo")
     public String combo(@AuthenticationPrincipal OidcUser user, Model model) {
         boolean isLoggedIn = user != null;
         model.addAttribute("isLoggedIn", isLoggedIn);
         model.addAttribute("title", "Hotels + Flights");
         model.addAttribute("contentTemplate", "combo");
+        model.addAttribute("searchPerformed", false);  // initial page
         return "layout";
     }
+
+
+
+    @PostMapping("/combo/search")
+    public String searchCombo(
+            @RequestParam("source") String source,
+            @RequestParam("destination") String destination,
+            @RequestParam("startDate") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) Date startDate,
+            @RequestParam("endDate") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) Date endDate,
+            @AuthenticationPrincipal OidcUser user,
+            Model model
+    ) {
+        boolean isLoggedIn = user != null;
+        model.addAttribute("isLoggedIn", isLoggedIn);
+        model.addAttribute("title", "Hotels + Flights");
+
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
+        String startDateStr = sdf.format(startDate);
+        String endDateStr = sdf.format(endDate);
+
+        try {
+            // 🔹 Get hotel options at the destination
+            List<Hotel> hotels = hotelService.getFreeHotels(startDate, endDate, destination);
+
+            // 🔹 Get outbound flight (source → destination)
+            List<Flight> outboundFlights = flightService.searchFlights(source, destination, startDateStr);
+
+            // 🔹 Get return flight (destination → source)
+            List<Flight> returnFlights = flightService.searchFlights(destination, source, endDateStr);
+            System.out.println("hotels "+hotels);
+            System.out.println("start flight: "+outboundFlights);
+            System.out.println("end flight: "+returnFlights);
+
+            model.addAttribute("hotels", hotels);
+            model.addAttribute("outboundFlights", outboundFlights);
+            model.addAttribute("returnFlights", returnFlights);
+            model.addAttribute("searchPerformed", true);
+
+        } catch (Exception e) {
+            System.err.println("Combo search error: " + e.getMessage());
+            e.printStackTrace();
+            model.addAttribute("error", "Failed to search combo package: " + e.getMessage());
+        }
+
+        model.addAttribute("contentTemplate", "combo");
+        return "layout";
+    }
+
     @GetMapping("/manager/dashboard")
     public String managerDashboard(@AuthenticationPrincipal OidcUser user, Model model) {
         boolean isLoggedIn = user != null;
