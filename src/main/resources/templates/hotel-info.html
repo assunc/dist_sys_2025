@@ -73,7 +73,7 @@
                 <h4 class="mt-5">Available Rooms</h4>
 
                 <div th:if="${error}" class="alert alert-danger" role="alert">
-                    <p th:text="${error}"></p>
+                    <p th:text="${errorMsg}"></p>
                 </div>
 
                 <div th:if="${searchPerformed}" class="d-flex flex-column gap-3 mt-3">

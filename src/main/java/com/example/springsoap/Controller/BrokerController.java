@@ -5,6 +5,7 @@ import com.example.springsoap.Entities.FlightOrder;
 import com.example.springsoap.Entities.Order;
 import com.example.springsoap.Entities.User;
 import com.example.springsoap.FlightService;
+import com.example.springsoap.MessageSender;
 import com.example.springsoap.Model.*;
 
 import com.example.springsoap.Entities.*;
@@ -17,8 +18,6 @@ import com.example.springsoap.Repository.OrderRepository;
 import com.example.springsoap.Repository.UserRepository;
 import com.example.springsoap.UserService;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -39,7 +38,6 @@ import java.net.URISyntaxException;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
-import java.text.ParseException;
 import java.text.SimpleDateFormat;
 
 import java.util.*;
@@ -61,31 +59,30 @@ public class BrokerController {
 
     private final UserService userService;
     private final HotelService hotelService;
-    private final AirlineSupplierRepository airlineSupplierRepository;
     private final HotelOrderRepository hotelOrderRepository;
 //    private final FlightOrderRepository flightOrderRepository;
 //    private final OrderRepository orderRepository;
 //    private final UserRepository userRepository;
 
     private final Reservation reservation;
+    private final MessageSender messageSender;
 
     @Autowired
     public BrokerController(
             UserService userService, HotelService hotelService,
             Reservation reservation,
-            AirlineSupplierRepository airlineSupplierRepository,
             HotelOrderRepository hotelOrderRepository,
             FlightOrderRepository flightOrderRepository,
-            OrderRepository orderRepository, UserRepository userRepository
+            OrderRepository orderRepository, UserRepository userRepository, MessageSender messageSender
     ) {
         this.userService = userService;
         this.hotelService = hotelService;
         this.reservation = reservation;
-        this.airlineSupplierRepository = airlineSupplierRepository;
         this.hotelOrderRepository = hotelOrderRepository;
         this.flightOrderRepository = flightOrderRepository;
         this.orderRepository = orderRepository;
         this.userRepository = userRepository;
+        this.messageSender = messageSender;
     }
 
 
@@ -262,24 +259,31 @@ public class BrokerController {
         model.addAttribute("isLoggedIn", isLoggedIn);
         model.addAttribute("title", "Hotels");
         model.addAttribute("contentTemplate", "hotels");
-
-        try {
-            List<Hotel> freeHotels = hotelService.getFreeHotels(startDate, endDate, destination);
-
-            model.addAttribute("hotels", freeHotels);
-            model.addAttribute("searchPerformed", true);
-            model.addAttribute("hasHotels", !freeHotels.isEmpty());
-            model.addAttribute("error", false);
-
-        } catch (Exception e) {
-            System.err.println("Exception during hotel search: " + e.getMessage());
-            e.printStackTrace(); // Print full stack trace for detailed debugging
-            model.addAttribute("error", "Error searching for hotels: " + e.getMessage());
+        if (startDate.after(endDate) || startDate.equals(endDate)|| startDate.before(new Date())) {
+            model.addAttribute("error", true);
+            model.addAttribute("errorMsg", "Invalid date range. Start date can't be in the past or after end date.");
             model.addAttribute("hotels", List.of()); // Ensure rooms list is empty on error
             model.addAttribute("searchPerformed", true);
             model.addAttribute("hasHotels", false);
-        }
+        } else {
+            try {
+                List<Hotel> freeHotels = hotelService.getFreeHotels(startDate, endDate, destination);
 
+                model.addAttribute("hotels", freeHotels);
+                model.addAttribute("searchPerformed", true);
+                model.addAttribute("hasHotels", !freeHotels.isEmpty());
+                model.addAttribute("error", false);
+
+            } catch (Exception e) {
+                System.err.println("Exception during hotel search: " + e.getMessage());
+                e.printStackTrace(); // Print full stack trace for detailed debugging
+                model.addAttribute("error", true);
+                model.addAttribute("errorMsg", "Error searching for hotels: " + e.getMessage());
+                model.addAttribute("hotels", List.of()); // Ensure rooms list is empty on error
+                model.addAttribute("searchPerformed", true);
+                model.addAttribute("hasHotels", false);
+            }
+        }
         // Retain search parameters for display on the page
         model.addAttribute("startDate", startDate);
         model.addAttribute("endDate", endDate);
@@ -299,32 +303,41 @@ public class BrokerController {
         model.addAttribute("isLoggedIn", isLoggedIn);
         model.addAttribute("title", "Hotel Info");
         model.addAttribute("contentTemplate", "hotel-info");
-        try {
-            Hotel hotel = hotelService.getHotel(hotelId);
-            model.addAttribute("hotel", hotel);
-            model.addAttribute("error", false);
-        } catch (Exception e) {
-            System.err.println("Exception during hotel search: " + e.getMessage());
-            e.printStackTrace(); // Print full stack trace for detailed debugging
-            model.addAttribute("error", "Error searching for hotels: " + e.getMessage());
-            model.addAttribute("hotel", null); // Ensure rooms list is empty on error
-        }
-
-        try {
-            List<Room> filteredRooms = hotelService.getFreeRooms(hotelId, startDate, endDate, numberOfPeople);
-            model.addAttribute("rooms", filteredRooms);
+        if (startDate.after(endDate) || startDate.equals(endDate)|| startDate.before(new Date())) {
+            model.addAttribute("error", true);
+            model.addAttribute("errorMsg", "Invalid date range. Start date can't be in the past or after end date.");
+            model.addAttribute("hotels", List.of()); // Ensure rooms list is empty on error
             model.addAttribute("searchPerformed", true);
-            model.addAttribute("hasRooms", !filteredRooms.isEmpty());
-            model.addAttribute("error", false);
-        } catch (Exception e) {
-            System.err.println("Exception during room search: " + e.getMessage());
-            e.printStackTrace(); // Print full stack trace for detailed debugging
-            model.addAttribute("error", "Error searching for rooms: " + e.getMessage());
-            model.addAttribute("rooms", List.of()); // Ensure rooms list is empty on error
-            model.addAttribute("searchPerformed", true);
-            model.addAttribute("hasRooms", false);
-        }
+            model.addAttribute("hasHotels", false);
+        } else {
+            try {
+                Hotel hotel = hotelService.getHotel(hotelId);
+                model.addAttribute("hotel", hotel);
+                model.addAttribute("error", false);
+            } catch (Exception e) {
+                System.err.println("Exception during hotel search: " + e.getMessage());
+                e.printStackTrace(); // Print full stack trace for detailed debugging
+                model.addAttribute("error", true);
+                model.addAttribute("errorMsg", "Error searching for hotels: " + e.getMessage());
+                model.addAttribute("hotel", null); // Ensure rooms list is empty on error
+            }
 
+            try {
+                List<Room> filteredRooms = hotelService.getFreeRooms(hotelId, startDate, endDate, numberOfPeople);
+                model.addAttribute("rooms", filteredRooms);
+                model.addAttribute("searchPerformed", true);
+                model.addAttribute("hasRooms", !filteredRooms.isEmpty());
+                model.addAttribute("error", false);
+            } catch (Exception e) {
+                System.err.println("Exception during room search: " + e.getMessage());
+                e.printStackTrace(); // Print full stack trace for detailed debugging
+                model.addAttribute("error", true);
+                model.addAttribute("errorMsg", "Error searching for rooms: " + e.getMessage());
+                model.addAttribute("rooms", List.of()); // Ensure rooms list is empty on error
+                model.addAttribute("searchPerformed", true);
+                model.addAttribute("hasRooms", false);
+            }
+        }
         // Retain search parameters for display on the page
         model.addAttribute("startDate", startDate);
         model.addAttribute("endDate", endDate);
@@ -419,7 +432,7 @@ public class BrokerController {
                 isLoggedIn ? userService.findOrCreateFromOidcUser(user) : null,
                 billingStreet + ", " + billingCity + ", " + billingPostalCode + ", " + billingCountry,
                 cardNumber + ", " + expirationMonth + "/" + expirationYear + ", " + cvc,
-                "booked"
+                "processing"
         );
 
         List<HotelOrder> hotelOrders = new ArrayList<>();
@@ -440,9 +453,9 @@ public class BrokerController {
                 System.err.println("Exception during booking search: " + e.getMessage());
                 e.printStackTrace(); // Print full stack trace for detailed debugging
                 model.addAttribute("error", "Error searching for hotels: " + e.getMessage());
+                allBookingsPending = false;
             }
         }
-
 
         if (!reservation.getFlightReservations().isEmpty()) {
             List<Long> seatIds = reservation.getFlightReservations().stream().map(FlightReservation::getSeatId).toList();
@@ -453,10 +466,12 @@ public class BrokerController {
                 System.err.println("Flight reservation error: " + e.getMessage());
                 e.printStackTrace();
                 model.addAttribute("error", "Error during flight reservation.");
+                allBookingsPending = false;
             }
         }
 
         // Save phase 1 orders
+        if (allBookingsPending) newOrder.setStatus("pending");
         orderRepository.save(newOrder);
         hotelOrderRepository.saveAll(hotelOrders);
         flightOrderRepository.saveAll(flightOrders);
@@ -471,6 +486,7 @@ public class BrokerController {
                     System.err.println("Exception during booking search: " + e.getMessage());
                     e.printStackTrace(); // Print full stack trace for detailed debugging
                     model.addAttribute("error", "Error searching for hotels: " + e.getMessage());
+                    allBookingsBooked = false;
                 }
             }
 
@@ -496,41 +512,15 @@ public class BrokerController {
             flightOrderRepository.saveAll(flightOrders);
         }
 
-        // --- Abort if needed ---
+        // --- Retry using a message queue ---
         if (!allBookingsPending || !allBookingsBooked) {
-            // Hotel cancel
-            if (!reservation.getRoomReservations().isEmpty()) {
-                try {
-                    allBookingsCanceled = hotelService.cancelOrders(newOrder, hotelOrders, true);
-                    model.addAttribute("error", false);
-                } catch (Exception e) {
-                    System.err.println("Hotel cancellation error: " + e.getMessage());
-                    e.printStackTrace();
-                    model.addAttribute("error", "Error cancelling hotel orders.");
-                }
-            }
-
-            // Flight cancel
-            if (!flightOrders.isEmpty()) {
-                try {
-                    allBookingsCanceled &= flightService.cancelBookings(flightOrders);
-                    model.addAttribute("error", false);
-                } catch (Exception e) {
-                    System.err.println("Flight cancellation error: " + e.getMessage());
-                    e.printStackTrace();
-                    model.addAttribute("error", "Error cancelling flight orders.");
-                }
-            }
-
-            orderRepository.save(newOrder);
-            hotelOrderRepository.saveAll(hotelOrders);
-            flightOrderRepository.saveAll(flightOrders);
+            OrderProcessingMessage message = new OrderProcessingMessage(newOrder.getId(), reservation.copy());
+            messageSender.sendOrderInitiation(message);
+            reservation.clear();
         }
 
         return "layout";
     }
-
-
 
     @GetMapping("/shopping-cart")
     public String viewShoppingCart(Model model, @AuthenticationPrincipal OidcUser user) {

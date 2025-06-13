@@ -33,4 +33,15 @@ public class Reservation {
         flightReservations.clear();
     }
 
+    public Reservation copy() {
+        Reservation newRes = new Reservation();
+        for (RoomReservation roomRes : roomReservations) {
+            newRes.addRoomReservation(roomRes);
+        }
+        for (FlightReservation flightRes : flightReservations) {
+            newRes.addFlightReservation(flightRes);
+        }
+        return newRes;
+    }
+
 }
