@@ -510,6 +510,7 @@ public class BrokerController {
             orderRepository.save(newOrder);
             hotelOrderRepository.saveAll(hotelOrders);
             flightOrderRepository.saveAll(flightOrders);
+            model.addAttribute("processed", true);
         }
 
         // --- Retry using a message queue ---
@@ -517,6 +518,7 @@ public class BrokerController {
             OrderProcessingMessage message = new OrderProcessingMessage(newOrder.getId(), reservation.copy());
             messageSender.sendOrderInitiation(message);
             reservation.clear();
+            model.addAttribute("processed", false);
         }
 
         return "layout";

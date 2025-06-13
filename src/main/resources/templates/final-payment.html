@@ -49,6 +49,7 @@
     <div class="container">
         <div class="success-icon">&#10004;</div>
         <div class="message">Payment Successful!</div>
+        <div th:unless="${processed}" class="message">One or more of the suppliers is currently down. Check your bookings in 15 minutes to see if your order went through</div>
         <a href="/" class="button">Return to Homepage</a>
     </div>
     </body>
