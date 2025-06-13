@@ -1,31 +1,117 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Combo Packages</title>
+    <style>
+        .flight-card {
+            position: relative;
+            padding: 10px;
+            border: 1px solid #ccc;
+            margin-bottom: 10px;
+            background: #f9f9f9;
+        }
+        .flight-details {
+            display: none;
+            position: absolute;
+            top: 100%;
+            left: 0;
+            width: 250px;
+            background: #fff;
+            border: 1px solid #888;
+            padding: 10px;
+            z-index: 100;
+        }
+        .flight-card:hover .flight-details {
+            display: block;
+        }
+        .btn {
+            padding: 6px 10px;
+            margin-right: 5px;
+            margin-top: 8px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+        .btn:hover {
+            background-color: #0056b3;
+        }
+    </style>
+</head>
+<body>
 <div th:fragment="content">
     <h2>Search Travel Packages</h2>
-    <p>Find complete packages: Flight + Hotel (Round Trip)</p>
-
-    <form th:action="@{/combo/search}" method="post">
-        <div>
-            <label for="source">From:</label>
-            <input type="text" id="source" name="source" required>
-        </div>
-
-        <div>
-            <label for="destination">To:</label>
-            <input type="text" id="destination" name="destination" required>
-        </div>
-
-        <div>
-            <label for="startDate">Start Date:</label>
-            <input type="date" id="startDate" name="startDate" required>
-        </div>
-
-        <div>
-            <label for="endDate">End Date:</label>
-            <input type="date" id="endDate" name="endDate" required>
-        </div>
-
-        <button type="submit">Search Packages</button>
+    <form th:action="@{/combo/search}" method="get">
+        <label>From: <input type="text" name="source" th:value="${source}" required></label>
+        <label>To: <input type="text" name="destination" th:value="${destination}" required></label>
+        <label>Start Date: <input type="date" name="startDate" th:value="${#dates.format(startDate, 'yyyy-MM-dd')}" required>
+        </label>
+        <label>End Date: <input type="date" name="endDate" th:value="${#dates.format(endDate, 'yyyy-MM-dd')}" required>
+        </label>
+        <label>Guests: <input type="number" name="numberOfPeople" min="1" th:value="${numberOfPeople}" required></label>
+        <button type="submit" class="btn">Search</button>
     </form>
+
+    <div th:if="${searchPerformed}">
+        <hr>
+        <h3>Available Packages</h3>
+        <div style="display: flex; gap: 30px; justify-content: space-between;">
+            <!-- Departure Flights -->
+            <div style="flex: 1;">
+                <h4>Departure Flights</h4>
+                <div th:each="flight : ${outboundFlights}" class="flight-card">
+                    <p><strong th:text="${flight.source} + ' → ' + ${flight.destination}"></strong></p>
+                    <p th:text="'Flight #: ' + ${flight.flightNumber}"></p>
+                    <p th:text="'Departure: ' + ${flight.departureTime}"></p>
+                    <div class="flight-details">
+                        <p th:text="'Economy: €' + ${flight.priceEconomy}"></p>
+                        <p th:text="'Business: €' + ${flight.priceBusiness}"></p>
+                        <p th:text="'First Class: €' + ${flight.priceFirst}"></p>
+                    </div>
+                    <a th:href="@{'/book/economy/' + ${flight.flightNumber}}" class="btn">Book Economy</a>
+                    <a th:href="@{'/book/business/' + ${flight.flightNumber}}" class="btn">Book Business</a>
+                    <a th:href="@{'/book/first/' + ${flight.flightNumber}}" class="btn">Book First</a>
+                </div>
+            </div>
+
+            <!-- Hotels -->
+            <div style="flex: 1;">
+                <h4>Hotels</h4>
+                <ul>
+                    <li th:each="hotel : ${hotels}">
+                        <p><strong th:text="${hotel.name}"></strong></p>
+                        <p th:text="'City: ' + ${hotel.city}"></p>
+                        <p th:text="'Address: ' + ${hotel.address}"></p>
+                        <p th:text="'Description: ' + ${hotel.description}"></p>
+                        <form th:action="@{/hotel-info/{hotelId}(hotelId=${hotel.id})}" method="post">
+                            <input type="hidden" name="startDate" th:value="${#dates.format(startDate, 'yyyy-MM-dd')}" />
+                            <input type="hidden" name="endDate" th:value="${#dates.format(endDate, 'yyyy-MM-dd')}" />
+                            <input type="hidden" name="numberOfPeople" th:value="${numberOfPeople}" />
+                            <button type="submit" class="btn btn-primary" style="padding: 8px 16px; font-size: 14px;">View Details</button>
+                        </form>
+                    </li>
+                </ul>
+            </div>
+
+            <!-- Return Flights -->
+            <div style="flex: 1;">
+                <h4>Return Flights</h4>
+                <div th:each="flight : ${returnFlights}" class="flight-card">
+                    <p><strong th:text="${flight.source} + ' → ' + ${flight.destination}"></strong></p>
+                    <p th:text="'Flight #: ' + ${flight.flightNumber}"></p>
+                    <p th:text="'Departure: ' + ${flight.departureTime}"></p>
+                    <div class="flight-details">
+                        <p th:text="'Economy: €' + ${flight.priceEconomy}"></p>
+                        <p th:text="'Business: €' + ${flight.priceBusiness}"></p>
+                        <p th:text="'First Class: €' + ${flight.priceFirst}"></p>
+                    </div>
+                    <a th:href="@{'/book/economy/' + ${flight.flightNumber}}" class="btn">Book Economy</a>
+                    <a th:href="@{'/book/business/' + ${flight.flightNumber}}" class="btn">Book Business</a>
+                    <a th:href="@{'/book/first/' + ${flight.flightNumber}}" class="btn">Book First</a>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
+</body>
 </html>
