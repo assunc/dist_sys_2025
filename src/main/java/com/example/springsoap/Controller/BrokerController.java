@@ -649,6 +649,7 @@ public class BrokerController {
             Model model
     ) {
         boolean isLoggedIn = user != null;
+        System.out.println("SEARCHING SOMETHING_________________");
         model.addAttribute("isLoggedIn", isLoggedIn);
         model.addAttribute("title", "Hotels + Flights");
 
@@ -656,6 +657,9 @@ public class BrokerController {
             List<Hotel> hotels = hotelService.getFreeHotels(startDate, endDate, destination);
             List<Flight> outboundFlights = flightService.searchFlights(source, destination, new SimpleDateFormat("yyyy-MM-dd").format(startDate));
             List<Flight> returnFlights = flightService.searchFlights(destination, source, new SimpleDateFormat("yyyy-MM-dd").format(endDate));
+            System.out.println("Hotel"+hotels);
+            System.out.println("Hotel"+outboundFlights);
+            System.out.println("Hotel"+returnFlights);
 
             model.addAttribute("hotels", hotels);
             model.addAttribute("outboundFlights", outboundFlights);
