@@ -1,24 +1,36 @@
 package com.example.springsoap;
 
 import com.example.springsoap.Model.FlightReservation;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.jms.annotation.JmsListener;
-import org.springframework.stereotype.Component;
-import org.springframework.transaction.annotation.Transactional;
-import java.util.List;
-import java.util.Optional;
+import com.example.springsoap.Model.OrderProcessingMessage;
 import com.example.springsoap.Entities.Order;
 import com.example.springsoap.Entities.HotelOrder;
 import com.example.springsoap.Entities.FlightOrder;
-import com.example.springsoap.Model.OrderProcessingMessage;
 import com.example.springsoap.Repository.OrderRepository;
 import com.example.springsoap.Repository.HotelOrderRepository;
 import com.example.springsoap.Repository.FlightOrderRepository;
 
+import com.azure.messaging.servicebus.ServiceBusClientBuilder;
+import com.azure.messaging.servicebus.ServiceBusProcessorClient;
+import com.azure.messaging.servicebus.ServiceBusReceivedMessage;
+import com.azure.messaging.servicebus.ServiceBusErrorContext;
+import com.azure.messaging.servicebus.ServiceBusException;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+
+import org.springframework.beans.factory.DisposableBean; // For client lifecycle management
+import org.springframework.beans.factory.InitializingBean; // For client lifecycle management
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional; // Keep for database transactions
+
+import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
+import java.util.List;
+import java.util.Optional;
+import java.util.function.Consumer; // For message and error handlers
 
 @Component
-public class OrderProcessingConsumer {
+public class OrderProcessingConsumer implements InitializingBean, DisposableBean { // Implement InitializingBean, DisposableBean
 
     private final OrderRepository orderRepository;
     private final HotelOrderRepository hotelOrderRepository;
@@ -26,55 +38,67 @@ public class OrderProcessingConsumer {
     private final HotelService hotelService;
     private final FlightService flightService;
     private final ObjectMapper objectMapper;
-    private final String orderInitiationQueueName; // To dynamically build DLQ name
 
-    // Inject dependencies, including the queue name for DLQ construction
+    private final String connectionString;
+    private final String queueName;
+    private ServiceBusProcessorClient mainQueueProcessorClient;
+    private ServiceBusProcessorClient deadLetterQueueProcessorClient;
+
+
     public OrderProcessingConsumer(OrderRepository orderRepository, HotelOrderRepository hotelOrderRepository,
                                    FlightOrderRepository flightOrderRepository, HotelService hotelService,
                                    FlightService flightService, ObjectMapper objectMapper,
-                                   @Value("${azure.servicebus.queue-name}") String orderInitiationQueueName) {
+                                   @Value("${azure.servicebus.connection-string}") String connectionString,
+                                   @Value("${azure.servicebus.queue-name}") String queueName) {
         this.orderRepository = orderRepository;
         this.hotelOrderRepository = hotelOrderRepository;
         this.flightOrderRepository = flightOrderRepository;
         this.hotelService = hotelService;
         this.flightService = flightService;
         this.objectMapper = objectMapper;
-        this.orderInitiationQueueName = orderInitiationQueueName;
+        this.connectionString = connectionString;
+        this.queueName = queueName;
     }
 
     // Listener for initial order processing messages from the Service Bus Queue
-    @JmsListener(destination = "${azure.servicebus.queue-name}")
     @Transactional
-    public void processOrderInitiation(String messageJson) { // Receive as String (JSON)
-        OrderProcessingMessage message;
+    public void processOrderInitiationMessage(ServiceBusReceivedMessage message) {
+        OrderProcessingMessage orderMessage;
         try {
-            message = objectMapper.readValue(messageJson, OrderProcessingMessage.class);
+            orderMessage = objectMapper.readValue(message.getBody().toString(), OrderProcessingMessage.class);
         } catch (Exception e) {
             System.err.println("Error deserializing message: " + e.getMessage());
             e.printStackTrace();
-            throw new RuntimeException("Failed to deserialize message", e); // Service Bus retries
+            return; // message cant be read
         }
 
-        System.out.println("Received order initiation message for Order ID: " + message.getOrderId());
+        System.out.println("Received order initiation message for Order ID: " + orderMessage.getOrderId());
 
-        Optional<Order> optionalOrder = orderRepository.findById(message.getOrderId());
+        Optional<Order> optionalOrder = orderRepository.findById(orderMessage.getOrderId());
         if (optionalOrder.isEmpty()) {
-            System.err.println("Order not found for ID: " + message.getOrderId() + ". Dropping message.");
+            System.err.println("Order not found for ID: " + orderMessage.getOrderId() + ". Dropping message.");
             return;
         }
         Order order = optionalOrder.get();
+        if (orderMessage.getReservation().getRoomReservations().isEmpty() && orderMessage.getReservation().getFlightReservations().isEmpty()) {
+            System.out.println("Order was empty. Dropping message.");
+            return;
+        }
 
         List<HotelOrder> hotelOrders = hotelOrderRepository.findByOrder(order);
         List<FlightOrder> flightOrders = flightOrderRepository.findByOrder(order);
 
         // --- Phase 1: Reserve ---
-        boolean allPending = true;
-        boolean allConfirmed = true;
+        boolean allPending = false;
+        boolean allConfirmed = false;
 
         if (order.getStatus().equalsIgnoreCase("processing")) {
-            if (!message.getReservation().getRoomReservations().isEmpty() && hotelOrders.isEmpty()) { // reserve didnt go through
+            System.out.println("Order was processing, send pending reservations");
+            System.out.println(orderMessage.getReservation().getRoomReservations().size());
+            System.out.println(hotelOrders.size());
+            if (!orderMessage.getReservation().getRoomReservations().isEmpty() && hotelOrders.isEmpty()) { // reserve didnt go through
                 try {
-                    allPending = hotelService.reserveOrders(message.getReservation().getRoomReservations(), order, hotelOrders);
+                    allPending = hotelService.reserveOrders(orderMessage.getReservation().getRoomReservations(), order, hotelOrders);
                 } catch (Exception e) {
                     System.err.println("Exception during booking search: " + e.getMessage());
                     e.printStackTrace();
@@ -82,8 +106,8 @@ public class OrderProcessingConsumer {
                 }
             }
 
-            if (!message.getReservation().getFlightReservations().isEmpty() && flightOrders.isEmpty()) { // reserve didnt go through
-                List<Long> seatIds = message.getReservation().getFlightReservations().stream().map(FlightReservation::getSeatId).toList();
+            if (!orderMessage.getReservation().getFlightReservations().isEmpty() && flightOrders.isEmpty()) { // reserve didnt go through
+                List<Long> seatIds = orderMessage.getReservation().getFlightReservations().stream().map(FlightReservation::getSeatId).toList();
                 try {
                     allPending &= flightService.reserveSeats(seatIds, order, flightOrders);
                 } catch (Exception e) {
@@ -92,16 +116,16 @@ public class OrderProcessingConsumer {
                     allPending = false;
                 }
             }
-        }
-
-        // --- Phase 2: Confirm if all reserved, else try to cancel ---
-        if (allPending) {
-            order.setStatus("pending");
+            if (allPending) order.setStatus("pending");
             // save so if it fails it can start from here next retry
             orderRepository.save(order);
             hotelOrderRepository.saveAll(hotelOrders);
             flightOrderRepository.saveAll(flightOrders);
+        }
 
+        // --- Phase 2: Confirm if all reserved, else try to cancel ---
+        if (allPending || order.getStatus().equalsIgnoreCase("pending")) {
+            System.out.println("Order is processing, send confirmations");
             if (!hotelOrders.isEmpty()) {
                 try {
                     allConfirmed = hotelService.confirmOrders(order, hotelOrders);
@@ -137,20 +161,40 @@ public class OrderProcessingConsumer {
         }
     }
 
-    @JmsListener(destination = "${azure.servicebus.queue-name}/$DeadLetterQueue")
-    public void handleDeadLetterMessage(String messageJson) { // Receive as String (JSON)
-        OrderProcessingMessage message;
+    private Consumer<ServiceBusErrorContext> processMainQueueError() {
+        return errorContext -> {
+            System.err.printf("Error occurred for resource: %s. Error type: %s%n",
+                    errorContext.getEntityPath(), errorContext.getErrorSource());
+            Throwable exception = errorContext.getException();
+            System.err.printf("Error: %s%n", exception.getMessage());
+            if (exception instanceof ServiceBusException) {
+                ServiceBusException serviceBusException = (ServiceBusException) exception;
+                if (serviceBusException.isTransient()) { // Now safe to call isTransient()
+                    System.err.println("Error is transient/retriable.");
+                } else {
+                    System.err.println("Error is non-transient/non-retriable.");
+                }
+            } else {
+                System.err.println("Error is a non-ServiceBusException type.");
+                exception.printStackTrace();
+            }
+        };
+    }
+
+    @Transactional
+    public void processDeadLetterMessage(ServiceBusReceivedMessage message) {
+        OrderProcessingMessage orderMessage;
         try {
-            message = objectMapper.readValue(messageJson, OrderProcessingMessage.class);
+            orderMessage = objectMapper.readValue(message.getBody().toString(), OrderProcessingMessage.class);
         } catch (Exception e) {
             System.err.println("Error deserializing dead-letter message: " + e.getMessage());
             e.printStackTrace();
             return;
         }
 
-        Optional<Order> optionalOrder = orderRepository.findById(message.getOrderId());
+        Optional<Order> optionalOrder = orderRepository.findById(orderMessage.getOrderId());
         if (optionalOrder.isEmpty()) {
-            System.err.println("Order not found for ID: " + message.getOrderId() + ". Dropping message.");
+            System.err.println("Order not found for ID: " + orderMessage.getOrderId() + ". Dropping message.");
             return;
         }
         Order order = optionalOrder.get();
@@ -161,7 +205,7 @@ public class OrderProcessingConsumer {
         boolean allCanceled = true;
 
         // Hotel cancel
-        if (!message.getReservation().getRoomReservations().isEmpty()) {
+        if (!orderMessage.getReservation().getRoomReservations().isEmpty()) {
             try {
                 allCanceled = hotelService.cancelOrders(order, hotelOrders, true);
             } catch (Exception e) {
@@ -197,5 +241,74 @@ public class OrderProcessingConsumer {
         orderRepository.save(order);
         hotelOrderRepository.saveAll(hotelOrders);
         flightOrderRepository.saveAll(flightOrders);
+    }
+
+    // --- Error Handling for Dead Letter Queue Processor ---
+    private Consumer<ServiceBusErrorContext> processDeadLetterQueueError() {
+        return errorContext -> {
+            System.err.printf("Error occurred in DLQ processor for resource: %s. Error type: %s%n",
+                    errorContext.getEntityPath(), errorContext.getErrorSource());
+            System.err.printf("Error: %s%n", errorContext.getException().getMessage());
+        };
+    }
+
+    // --- Lifecycle Methods for ServiceBusProcessorClient ---
+    @Override
+    public void afterPropertiesSet() throws Exception {
+        // Build and start the processor for the main queue
+        this.mainQueueProcessorClient = new ServiceBusClientBuilder()
+                .connectionString(connectionString)
+                .processor()
+                .queueName(queueName)
+                .processMessage(context -> {
+                    // Wrap your transactional method in a lambda for the processor
+                    try {
+                        processOrderInitiationMessage(context.getMessage());
+                        context.complete(); // Acknowledge message if processing is successful
+                    } catch (Exception e) {
+                        System.err.println("Error processing message, abandoning: " + e.getMessage());
+                        context.abandon(); // Requeue message if processing fails
+                        // Consider dead-lettering explicitly for certain unrecoverable errors:
+                        // context.deadLetter("Failed to process", e.getMessage());
+                    }
+                })
+                .processError(processMainQueueError())
+                .buildProcessorClient();
+
+        // Build and start the processor for the dead-letter queue
+        this.deadLetterQueueProcessorClient = new ServiceBusClientBuilder()
+                .connectionString(connectionString)
+                .processor()
+                .queueName(queueName + "/$DeadLetterQueue") // Standard DLQ naming convention
+                .processMessage(context -> {
+                    try {
+                        processDeadLetterMessage(context.getMessage());
+                        context.complete(); // Acknowledge DLQ message if processing is successful
+                    } catch (Exception e) {
+                        System.err.println("Error processing dead-letter message, abandoning: " + e.getMessage());
+                        context.abandon(); // Requeue DLQ message if processing fails
+                    }
+                })
+                .processError(processDeadLetterQueueError())
+                .buildProcessorClient();
+
+        System.out.println("Starting Service Bus Processor Clients...");
+        mainQueueProcessorClient.start();
+        deadLetterQueueProcessorClient.start();
+    }
+
+    @Override
+    public void destroy() throws Exception {
+        // Stop and close the processor clients when the Spring context is destroyed
+        if (mainQueueProcessorClient != null && mainQueueProcessorClient.isRunning()) {
+            mainQueueProcessorClient.stop();
+            mainQueueProcessorClient.close();
+            System.out.println("Main ServiceBusProcessorClient stopped and closed.");
+        }
+        if (deadLetterQueueProcessorClient != null && deadLetterQueueProcessorClient.isRunning()) {
+            deadLetterQueueProcessorClient.stop();
+            deadLetterQueueProcessorClient.close();
+            System.out.println("Dead Letter ServiceBusProcessorClient stopped and closed.");
+        }
     }
 }

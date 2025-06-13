@@ -439,8 +439,8 @@ public class BrokerController {
         List<FlightOrder> flightOrders = new ArrayList<>();
 
         // --- Two-phase commit flags ---
-        boolean allBookingsPending = true;
-        boolean allBookingsBooked = true;
+        boolean allBookingsPending = false;
+        boolean allBookingsBooked = false;
         boolean allBookingsCanceled = false;
 
         // --- Phase 1: Reserve ---

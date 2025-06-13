@@ -7,13 +7,16 @@ import java.util.regex.Pattern;
 public class Room {
     private int id;
     private int number;
-    private int nOfPeople;
+    private int numberOfPeople;
     private int price;
+
+    public Room() {
+    }
 
     public Room(int id, int number, int nOfPeople, int price) {
         this.id = id;
         this.number = number;
-        this.nOfPeople = nOfPeople;
+        this.numberOfPeople = nOfPeople;
         this.price = price;
     }
 
@@ -25,7 +28,7 @@ public class Room {
             try {
                 this.id = Integer.parseInt(matcher.group(1));
                 this.number = Integer.parseInt(matcher.group(2));
-                this.nOfPeople = Integer.parseInt(matcher.group(3));
+                this.numberOfPeople = Integer.parseInt(matcher.group(3));
                 this.price = Integer.parseInt(matcher.group(4));
             } catch (NumberFormatException e) {
                 throw new IllegalArgumentException("Invalid number format found in room string: " + roomInfo, e);
@@ -45,8 +48,8 @@ public class Room {
         return number;
     }
 
-    public int getNOfPeople() {
-        return nOfPeople;
+    public int getNumberOfPeople() {
+        return numberOfPeople;
     }
 
     public int getPrice() {
@@ -58,7 +61,7 @@ public class Room {
         return "Room{" +
                 "id=" + id +
                 ", number=" + number +
-                ", nOfPeople=" + nOfPeople +
+                ", nOfPeople=" + numberOfPeople +
                 ", price=" + price +
                 '}';
     }

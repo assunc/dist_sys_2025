@@ -1,37 +1,54 @@
 package com.example.springsoap;
 
-import org.springframework.stereotype.Service;
 import com.example.springsoap.Model.OrderProcessingMessage;
+import com.azure.messaging.servicebus.ServiceBusClientBuilder;
+import com.azure.messaging.servicebus.ServiceBusMessage;
+import com.azure.messaging.servicebus.ServiceBusSenderClient;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import org.springframework.beans.factory.DisposableBean; // Import DisposableBean
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.jms.core.JmsTemplate;
-import com.fasterxml.jackson.databind.ObjectMapper; // For JSON serialization
+import org.springframework.stereotype.Service;
 
 @Service
-public class MessageSender {
+public class MessageSender implements DisposableBean { // Implement DisposableBean
 
-    private final JmsTemplate jmsTemplate;
-    private final ObjectMapper objectMapper; // To convert objects to JSON string
-    private final String orderInitiationQueueName; // Name of your Service Bus Queue
+    private final ServiceBusSenderClient senderClient;
+    private final ObjectMapper objectMapper;
 
-    public MessageSender(JmsTemplate jmsTemplate,
-                         ObjectMapper objectMapper,
-                         @Value("${azure.servicebus.queue-name}") String orderInitiationQueueName) {
-        this.jmsTemplate = jmsTemplate;
+    public MessageSender(@Value("${azure.servicebus.connection-string}") String connectionString,
+                         @Value("${azure.servicebus.queue-name}") String queueName,
+                         ObjectMapper objectMapper) {
+        // Build the ServiceBusSenderClient
+        this.senderClient = new ServiceBusClientBuilder()
+                .connectionString(connectionString)
+                .sender()
+                .queueName(queueName)
+                .buildClient();
         this.objectMapper = objectMapper;
-        this.orderInitiationQueueName = orderInitiationQueueName;
     }
 
     public void sendOrderInitiation(OrderProcessingMessage message) {
         try {
             // Convert the message object to a JSON string
             String jsonMessage = objectMapper.writeValueAsString(message);
+            System.out.println(jsonMessage);
             // Send the JSON string to the Service Bus Queue
-            jmsTemplate.convertAndSend(orderInitiationQueueName, jsonMessage);
-            System.out.println("Sent order initiation message for Order ID: " + message.getOrderId() + " to Service Bus Queue: " + orderInitiationQueueName);
+            ServiceBusMessage serviceBusMessage = new ServiceBusMessage(jsonMessage);
+            senderClient.sendMessage(serviceBusMessage); // Send the message
+            System.out.println("Sent order initiation message for Order ID: " + message.getOrderId() + " to Service Bus Queue");
         } catch (Exception e) {
             System.err.println("Error sending message to Service Bus: " + e.getMessage());
             e.printStackTrace();
             throw new RuntimeException("Failed to send message to Service Bus", e);
+        }
+    }
+
+    @Override
+    public void destroy() throws Exception {
+        // Close the sender client when the Spring context is destroyed
+        if (senderClient != null) {
+            senderClient.close();
+            System.out.println("ServiceBusSenderClient closed.");
         }
     }
 }

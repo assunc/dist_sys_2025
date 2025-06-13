@@ -80,7 +80,7 @@
                     <div th:each="room : ${rooms}" style="border: 1px solid #ccc; border-radius: 8px; padding: 16px; display: flex; justify-content: space-between; align-items: center; background-color: #f9f9f9;">
                         <div>
                             <p><strong>Room <span th:text="${room.number}">101</span></strong></p>
-                            <p><i class="fas fa-user-friends"></i> Capacity: <span th:text="${room.nOfPeople}">2</span></p>
+                            <p><i class="fas fa-user-friends"></i> Capacity: <span th:text="${room.numberOfPeople}">2</span></p>
                             <p><strong><i class="fas fa-euro-sign"></i> <span th:text="${room.price}">100</span></strong></p>
                         </div>
                         <input type="checkbox" th:id="${room.toString}" th:name="${room.toString}">
