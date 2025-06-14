@@ -2,299 +2,146 @@
 <html xmlns:th="http://www.thymeleaf.org">
 <head>
     <title>Combo Travel Packages</title>
+
+</head>
+<body>
+<div th:fragment="content">
     <style>
-        /* Base Styles */
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            line-height: 1.6;
-            color: #333;
-            background-color: #f5f7fa;
-            margin: 0;
-            padding: 20px;
-        }
-
-        h2, h3, h4 {
-            color: #2c3e50;
-        }
-
-        h2 {
-            margin-bottom: 25px;
-            font-size: 28px;
-            text-align: center;
-            position: relative;
-        }
-
-        h2:after {
-            content: "";
-            display: block;
-            width: 80px;
-            height: 3px;
-            background: linear-gradient(to right, #3498db, #9b59b6);
-            margin: 10px auto;
-        }
-
-        /* Enhanced Search Form */
-        .search-form {
-            background: white;
-            padding: 30px;
-            border-radius: 10px;
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
-            margin-bottom: 40px;
-            max-width: 1000px;
-            margin-left: auto;
-            margin-right: auto;
-            background: linear-gradient(135deg, #f5f7fa 0%, #e4e8eb 100%);
-            border: 1px solid rgba(255,255,255,0.3);
-        }
-
-        .form-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 20px;
-            align-items: end;
-        }
-
-        .form-group {
-            margin-bottom: 0;
-            position: relative;
-        }
-
-        label {
-            display: block;
-            margin-bottom: 8px;
-            font-weight: 600;
-            color: #2c3e50;
-            font-size: 14px;
-        }
-
-        input[type="text"],
-        input[type="date"],
-        input[type="number"] {
-            width: 100%;
-            padding: 12px 15px;
-            border: 1px solid #ddd;
-            border-radius: 6px;
-            font-size: 14px;
-            transition: all 0.3s ease;
-            background-color: white;
-        }
-
-        input[type="text"]:focus,
-        input[type="date"]:focus,
-        input[type="number"]:focus {
-            border-color: #3498db;
-            box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.2);
-            outline: none;
-        }
-
-        .search-btn {
-            background: linear-gradient(to right, #3498db, #9b59b6);
-            color: white;
-            border: none;
-            padding: 14px;
-            border-radius: 6px;
-            font-size: 16px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-        }
-
-        .search-btn:hover {
-            background: linear-gradient(to right, #2980b9, #8e44ad);
-            transform: translateY(-2px);
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-        }
-
-        /* Results Section */
-        .results-container {
-            max-width: 1200px;
-            margin: 0 auto;
-        }
 
         .packages-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr 1fr;
-            gap: 25px;
+            display: flex;
+            align-items: flex-start;
+            gap: 15px;
             margin-top: 20px;
+            flex-wrap: wrap;
         }
 
-        @media (max-width: 900px) {
-            .packages-grid {
-                grid-template-columns: 1fr;
-            }
+        .packages-grid > div {
+                flex: 1 1 calc(33.33% - 20px); /* Allow 3 per row with spacing */
+    max-width: calc(33.33% - 20px);
+    box-sizing: border-box;
         }
-
-        /* Flight Cards */
-        .flight-card {
-            background: white;
-            border-radius: 8px;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-            padding: 20px;
-            margin-bottom: 20px;
-            position: relative;
-            transition: transform 0.3s ease, box-shadow 0.3s ease;
-        }
-
-        .flight-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
-        }
-
-        .flight-header {
-            font-weight: 600;
-            font-size: 18px;
+        .timeline-column {
             margin-bottom: 10px;
-            color: #3498db;
         }
 
-        .flight-route {
+        .timeline-row {
             display: flex;
             align-items: center;
-            margin-bottom: 15px;
+            justify-content: space-between;
         }
 
-        .flight-route span {
-            margin: 0 10px;
-            color: #7f8c8d;
+        .timeline-time {
+            font-weight: bold;
+            font-size: 14px;
+            color: #2c3e50;
         }
 
-        .flight-info {
-            margin-bottom: 15px;
-        }
-
-        .flight-info p {
-            margin: 5px 0;
+        .timeline-line {
             display: flex;
             align-items: center;
-            gap: 8px;
+            gap: 4px;
+            flex: 1;
+            margin: 0 8px;
+            justify-content: center;
         }
 
-        .price-tiers {
-            background: #f8f9fa;
+        .dot {
+            width: 6px;
+            height: 6px;
+            border: 2px solid #333;
+            border-radius: 50%;
+            background: white;
+        }
+
+        .line {
+            width: 30px;
+            height: 2px;
+            background: #333;
+        }
+
+        .timeline-labels {
+            display: flex;
+            justify-content: space-between;
+            font-size: 12px;
+            color: #777;
+            margin-top: 4px;
+            align-items: center;
+        }
+
+        .badge {
+            background: green;
+            color: white;
+            font-size: 10px;
+            padding: 2px 6px;
             border-radius: 6px;
-            padding: 15px;
-            margin: 15px 0;
+        }
+
+        /* Price styles reused */
+        .price-tiers {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            margin-top: 10px;
         }
 
         .price-tier {
             display: flex;
             justify-content: space-between;
-            margin-bottom: 8px;
-            padding-bottom: 8px;
-            border-bottom: 1px dashed #ddd;
-        }
-
-        .price-tier:last-child {
-            border-bottom: none;
-            margin-bottom: 0;
-        }
-
-        .btn-group {
-            display: flex;
-            flex-wrap: wrap;
+            align-items: center;
             gap: 8px;
-            margin-top: 15px;
+            font-size: 14px;
         }
 
-        .btn {
-            padding: 8px 12px;
-            border-radius: 4px;
+        .price-tier .label {
+            color: #2c3e50;
+            font-weight: 600;
+            width: 90px;
+        }
+
+        .book-btn {
+            background-color: #0071c2;
+            color: white;
+            padding: 8px 14px;
             font-size: 14px;
             font-weight: 500;
-            cursor: pointer;
-            transition: all 0.2s ease;
             text-decoration: none;
-            display: inline-block;
-            text-align: center;
-            flex: 1;
-            min-width: 80px;
+            border: none;
+            border-radius: 6px;
+            transition: background-color 0.3s ease;
         }
 
-        .btn-primary {
-            background-color: #3498db;
-            color: white;
-            border: 1px solid #2980b9;
+        .book-btn:hover {
+            background-color: #005fa3;
         }
 
-        .btn-primary:hover {
-            background-color: #2980b9;
-        }
 
-        .btn-economy {
-            background-color: #2ecc71;
-            color: white;
-            border: 1px solid #27ae60;
-        }
-
-        .btn-economy:hover {
-            background-color: #27ae60;
-        }
-
-        .btn-business {
-            background-color: #f39c12;
-            color: white;
-            border: 1px solid #d35400;
-        }
-
-        .btn-business:hover {
-            background-color: #e67e22;
-        }
-
-        .btn-first {
-            background-color: #9b59b6;
-            color: white;
-            border: 1px solid #8e44ad;
-        }
-
-        .btn-first:hover {
-            background-color: #8e44ad;
-        }
-
-        /* Hotel Cards */
-        .hotel-card {
-            background: white;
-            border-radius: 8px;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        .section-card {
+            background-color: white;
             padding: 20px;
-            margin-bottom: 20px;
-        }
-
-        .hotel-name {
-            font-size: 18px;
-            font-weight: 600;
-            color: #3498db;
-            margin-bottom: 10px;
-        }
-
-        .hotel-location {
+            border-radius: 12px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+            margin-bottom: 30px;
             display: flex;
-            align-items: center;
-            margin-bottom: 10px;
-            color: #7f8c8d;
-            font-size: 14px;
+            flex-direction: column;
+            gap: 20px;
+            transition: transform 0.25s ease, box-shadow 0.25s ease;
+            transform-origin: center;
+
+        }
+        .section-card:hover {
+              transform: scale(1.02); /* grows slightly */
+            box-shadow: 0 6px 18px rgba(0, 0, 0, 0.08); /* soft pop-up shadow */
+            border: 1px solid #cce5f7;
         }
 
-        .hotel-location i {
-            margin-right: 5px;
-        }
-
-        .hotel-description {
-            margin-bottom: 15px;
-            font-size: 14px;
-            line-height: 1.5;
-        }
-
-        /* Section Headers */
         .section-header {
             display: flex;
             align-items: center;
-            margin-bottom: 15px;
-            padding-bottom: 10px;
+            gap: 10px;
             border-bottom: 1px solid #eee;
+            padding-bottom: 10px;
+            margin-bottom: 10px;
         }
 
         .section-header h4 {
@@ -303,66 +150,105 @@
             color: #2c3e50;
         }
 
-        .section-header i {
-            margin-right: 10px;
-            color: #3498db;
+        .section-content {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
         }
 
-        /* No Results Message */
-        .no-results {
-            text-align: center;
-            padding: 40px;
-            background: white;
+        .flight-card,.hotel-card {
+            background: #fff;
+            border: 1px solid #ddd;
             border-radius: 8px;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-            margin-top: 20px;
+            padding: 16px;
+            box-shadow: 0 1px 4px rgba(0, 0, 0, 0.03);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+
+        }
+        .flight-card:hover,
+        .hotel-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 6px 12px rgba(0, 113, 194, 0.08); /* lighter blue shadow */
+            border: 1px solid #b3d9f5; /* soft light blue border */
+
+        }
+        .flight-info {
+            font-size: 13px;
+            color: #666; /* soft gray text */
+            margin-top: 8px;
+            line-height: 1.4;
         }
 
-        /* Price Tags */
-        .price-tag {
-            font-weight: 600;
-            color: #2c3e50;
+        .flight-info p {
+            margin: 4px 0;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .flight-info i {
+            color: #0071c2;
+            font-size: 14px;
+        }
+
+
+
         }
     </style>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
-</head>
-<body>
-<div th:fragment="content">
     <div class="search-form">
         <h2>Plan Your Perfect Getaway</h2>
-        <form th:action="@{/combo/search}" method="get">
-            <div class="form-grid">
-                <div class="form-group">
-                    <label><i class="fas fa-plane-departure"></i> Departure From</label>
-                    <input type="text" name="source" th:value="${source}" placeholder="City or Airport" required>
+        <div style="max-width: 960px; margin: 0 auto; padding: 24px;">
+            <form th:action="@{/combo/search}" method="get" style="
+                display: flex;
+                flex-wrap: wrap;
+                gap: 12px;
+                background-color: white;
+                border: 2px solid #febb02;
+                border-radius: 12px;
+                padding: 16px;
+                box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+            ">
+                <!-- Departure -->
+                <div style="flex: 1; display: flex; align-items: center; background-color: #f2f2f2; padding: 10px 12px; border-radius: 8px;">
+                    <i class="fa-solid fa-plane-departure" style="margin-right: 8px; font-size: 18px; color: #555;"></i>
+                    <input type="text" name="source" th:value="${source}" placeholder="From" required style="border: none; background: transparent; outline: none; font-size: 16px; width: 100%;">
                 </div>
-                <div class="form-group">
-                    <label><i class="fas fa-plane-arrival"></i> Destination</label>
-                    <input type="text" name="destination" th:value="${destination}" placeholder="City or Airport" required>
+
+                <!-- Destination -->
+                <div style="flex: 1; display: flex; align-items: center; background-color: #f2f2f2; padding: 10px 12px; border-radius: 8px;">
+                    <i class="fa-solid fa-plane-arrival" style="margin-right: 8px; font-size: 18px; color: #555;"></i>
+                    <input type="text" name="destination" th:value="${destination}" placeholder="To" required style="border: none; background: transparent; outline: none; font-size: 16px; width: 100%;">
                 </div>
-                <div class="form-group">
-                    <label><i class="far fa-calendar-alt"></i> Departure Date</label>
-                    <input type="date" name="startDate" th:value="${#dates.format(startDate, 'yyyy-MM-dd')}" required>
+
+                <!-- Start Date -->
+                <div style="flex: 1; display: flex; align-items: center; background-color: #f2f2f2; padding: 10px 12px; border-radius: 8px;">
+                    <i class="fa-solid fa-calendar-days" style="margin-right: 8px; font-size: 18px; color: #555;"></i>
+                    <input type="date" name="startDate" th:value="${#dates.format(startDate, 'yyyy-MM-dd')}" required style="border: none; background: white; outline: none; font-size: 16px; border-radius: 6px; padding: 6px; flex: 1;">
                 </div>
-                <div class="form-group">
-                    <label><i class="far fa-calendar-alt"></i> Return Date</label>
-                    <input type="date" name="endDate" th:value="${#dates.format(endDate, 'yyyy-MM-dd')}" required>
+
+                <!-- End Date -->
+                <div style="flex: 1; display: flex; align-items: center; background-color: #f2f2f2; padding: 10px 12px; border-radius: 8px;">
+                    <i class="fa-solid fa-calendar-check" style="margin-right: 8px; font-size: 18px; color: #555;"></i>
+                    <input type="date" name="endDate" th:value="${#dates.format(endDate, 'yyyy-MM-dd')}" required style="border: none; background: white; outline: none; font-size: 16px; border-radius: 6px; padding: 6px; flex: 1;">
                 </div>
-                <div class="form-group">
-                    <label><i class="fas fa-user-friends"></i> Travelers</label>
-                    <input type="number" name="numberOfPeople" min="1" th:value="${numberOfPeople}" placeholder="Number of guests" required>
+
+                <!-- People -->
+                <div style="flex: 0.7; display: flex; align-items: center; background-color: #f2f2f2; padding: 10px 12px; border-radius: 8px;">
+                    <i class="fa-solid fa-user-friends" style="margin-right: 8px; font-size: 18px; color: #555;"></i>
+                    <input type="number" name="numberOfPeople" min="1" th:value="${numberOfPeople}" placeholder="number" required style="border: none; background: transparent; outline: none; font-size: 16px; width: 100%;">
                 </div>
-                <div class="form-group">
-                    <button type="submit" class="search-btn">
-                        <i class="fas fa-search"></i> Find Packages
-                    </button>
-                </div>
-            </div>
-        </form>
+
+                <!-- Search Button -->
+                <button type="submit" style="padding: 12px 24px; font-size: 16px; background-color: #0071c2; color: white; border: none; border-radius: 8px; cursor: pointer;">
+                    <i class="fas fa-search"></i> Search
+                </button>
+            </form>
+        </div>
+        <div th:if="${error}" class="alert alert-danger" role="alert">
+            <p th:text="${errorMsg}"></p>
+        </div>
     </div>
-    <div th:if="${error}" class="alert alert-danger" role="alert">
-        <p th:text="${errorMsg}"></p>
-    </div>
+
 
     <div th:if="${searchPerformed}" class="results-container">
         <div th:if="${outboundFlights.empty and returnFlights.empty and hotels.empty}" class="no-results">
@@ -383,117 +269,172 @@
             <div class="packages-grid">
                 <!-- Departure Flights -->
                 <div>
+                    <div class="section-card">
                     <div class="section-header">
                         <i class="fas fa-plane-departure"></i>
                         <h4>Departure Flights</h4>
                     </div>
+                    <div class="section-content">
 
                     <div th:each="flight : ${outboundFlights}" class="flight-card">
-                        <div class="flight-route">
-                            <span th:text="${flight.source}"></span>
-                            <i class="fas fa-long-arrow-alt-right"></i>
-                            <span th:text="${flight.destination}"></span>
+                        <!-- Compact Timeline -->
+                        <div class="timeline-column">
+                            <div class="timeline-row">
+                                <div class="timeline-time" th:text="${#dates.format(flight.departureTime, 'HH:mm')}"></div>
+                                <div class="timeline-line">
+                                    <div class="dot"></div>
+                                    <div class="line"></div>
+                                    <div class="dot"></div>
+                                </div>
+                                <div class="timeline-time" th:text="${#dates.format(flight.arrivalTime, 'HH:mm')}"></div>
+                            </div>
+                            <div class="timeline-labels">
+                                <div th:text="${flight.source}"></div>
+                                <div class="badge">Direct</div>
+                                <div th:text="${flight.destination}"></div>
+                            </div>
                         </div>
 
+                        <!-- Plane & Info -->
                         <div class="flight-info">
                             <p><i class="far fa-clock"></i> <span th:text="${flight.departureTime}"></span></p>
-                            <p><i class="fas fa-plane"></i> Flight #<span th:text="${flight.flightNumber}"></span></p>
+                            <p><i class="fa-solid fa-plane-circle-check"></i> <span th:text="${flight.planeModel}"></span></p>
                         </div>
 
+                        <!-- Compact Prices -->
                         <div class="price-tiers">
                             <div class="price-tier">
-                                <span>Economy Class:</span>
-                                <span class="price-tag" th:text="'€' + ${flight.priceEconomy}"></span>
+                                <span class="label">Economy:</span>
+                                <span th:text="'€' + ${flight.priceEconomy}"></span>
+                                <a th:href="@{'/book/economy/' + ${flight.flightNumber}}" class="book-btn">Book</a>
                             </div>
                             <div class="price-tier">
-                                <span>Business Class:</span>
-                                <span class="price-tag" th:text="'€' + ${flight.priceBusiness}"></span>
+                                <span class="label">Business:</span>
+                                <span th:text="'€' + ${flight.priceBusiness}"></span>
+                                <a th:href="@{'/book/business/' + ${flight.flightNumber}}" class="book-btn">Book</a>
                             </div>
                             <div class="price-tier">
-                                <span>First Class:</span>
-                                <span class="price-tag" th:text="'€' + ${flight.priceFirst}"></span>
+                                <span class="label">First:</span>
+                                <span th:text="'€' + ${flight.priceFirst}"></span>
+                                <a th:href="@{'/book/first/' + ${flight.flightNumber}}" class="book-btn">Book</a>
                             </div>
                         </div>
-
-                        <div class="btn-group">
-                            <a th:href="@{'/book/economy/' + ${flight.flightNumber}}" class="btn btn-economy">Economy</a>
-                            <a th:href="@{'/book/business/' + ${flight.flightNumber}}" class="btn btn-business">Business</a>
-                            <a th:href="@{'/book/first/' + ${flight.flightNumber}}" class="btn btn-first">First</a>
+                        <div th:if="${outboundFlights.empty}" class="no-results" style="padding: 20px;">
+                            <i class="fas fa-info-circle"></i> No departure flights found
                         </div>
+
+                    </div>
                     </div>
 
-                    <div th:if="${outboundFlights.empty}" class="no-results" style="padding: 20px;">
-                        <i class="fas fa-info-circle"></i> No departure flights found
                     </div>
+
                 </div>
 
                 <!-- Hotels -->
                 <div>
+                    <div class="section-card">
+
                     <div class="section-header">
                         <i class="fas fa-hotel"></i>
                         <h4>Hotels</h4>
                     </div>
+                        <div class="section-content">
+                            <div th:each="hotel : ${hotels}">
+                                <div th:if="${hotel.id != null}" class="hotel-card">
 
-                    <div th:each="hotel : ${hotels}" class="hotel-card">
-                        <div class="hotel-name" th:text="${hotel.name}"></div>
-                        <div class="hotel-location">
-                            <i class="fas fa-map-marker-alt"></i>
-                            <span th:text="${hotel.city} + ', ' + ${hotel.address}"></span>
+                                    <!-- Hotel Image -->
+                                    <div style="flex-shrink: 0; width: 200px; height: 200px;">
+                                        <img th:src="${hotel.imageUrl}" alt="Hotel Image"
+                                             style="width: 100%; height: 100%; object-fit: cover; border-radius: 8px;" />
+                                    </div>
+
+
+                                    <!-- Hotel Info -->
+                                    <div style="flex: 1; display: flex; flex-direction: column; justify-content: space-between; height: 180px;">
+                                        <div>
+                                            <h4 th:text="${hotel.name}" style="margin: 0; font-size: 20px;"></h4>
+                                            <p th:text="${hotel.city + ', ' + hotel.address}" style="color: #555; margin: 4px 0;"></p>
+                                            <p th:text="${hotel.description}" style="color: #777; font-size: 14px;"></p>
+                                        </div>
+                                        <div style="margin-top: 12px;">
+                                            <form th:action="@{/hotel-info/{hotelId}(hotelId=${hotel.id})}" method="post">
+                                                <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+
+                                                <input type="hidden" name="startDate" th:value="${#dates.format(startDate, 'yyyy-MM-dd')}" />
+                                                <input type="hidden" name="endDate" th:value="${#dates.format(endDate, 'yyyy-MM-dd')}" />
+                                                <input type="hidden" name="numberOfPeople" th:value="${numberOfPeople}" />
+                                                <button type="submit" class="btn btn-primary" style="padding: 8px 16px; font-size: 14px;">
+                                                    <i class="fas fa-info-circle"></i> View Details
+                                                </button>
+                                            </form>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+
                         </div>
-                        <div class="hotel-description" th:text="${hotel.description}"></div>
-                        <form th:action="@{/hotel-info/{hotelId}(hotelId=${hotel.id})}" method="post">
-                            <input type="hidden" name="startDate" th:value="${#dates.format(startDate, 'yyyy-MM-dd')}" />
-                            <input type="hidden" name="endDate" th:value="${#dates.format(endDate, 'yyyy-MM-dd')}" />
-                            <input type="hidden" name="numberOfPeople" th:value="${numberOfPeople}" />
-                            <button type="submit" class="btn btn-primary">
-                                <i class="fas fa-info-circle"></i> View Details
-                            </button>
-                        </form>
-                    </div>
 
                     <div th:if="${hotels.empty}" class="no-results" style="padding: 20px;">
                         <i class="fas fa-info-circle"></i> No hotels found
                     </div>
-                </div>
+                </div>  </div>
 
-                <!-- Return Flights -->
+                    <!-- Return Flights -->
                 <div>
-                    <div class="section-header">
-                        <i class="fas fa-plane-arrival"></i>
-                        <h4>Return Flights</h4>
-                    </div>
+                    <div class="section-card">
 
-                    <div th:each="flight : ${returnFlights}" class="flight-card">
-                        <div class="flight-route">
-                            <span th:text="${flight.source}"></span>
-                            <i class="fas fa-long-arrow-alt-right"></i>
-                            <span th:text="${flight.destination}"></span>
+                        <div class="section-header">
+                            <i class="fas fa-plane-arrival"></i>
+                            <h4>Return Flights</h4>
                         </div>
+                        <div class="section-content">
 
-                        <div class="flight-info">
-                            <p><i class="far fa-clock"></i> <span th:text="${flight.departureTime}"></span></p>
-                            <p><i class="fas fa-plane"></i> Flight #<span th:text="${flight.flightNumber}"></span></p>
-                        </div>
+                            <div th:each="flight : ${returnFlights}" class="flight-card">
+                                <!-- Compact Timeline -->
+                                <div class="timeline-column">
+                                    <div class="timeline-row">
+                                        <div class="timeline-time" th:text="${#dates.format(flight.departureTime, 'HH:mm')}"></div>
+                                        <div class="timeline-line">
+                                            <div class="dot"></div>
+                                            <div class="line"></div>
+                                            <div class="dot"></div>
+                                        </div>
+                                        <div class="timeline-time" th:text="${#dates.format(flight.arrivalTime, 'HH:mm')}"></div>
+                                    </div>
+                                    <div class="timeline-labels">
+                                        <div th:text="${flight.source}"></div>
+                                        <div class="badge">Direct</div>
+                                        <div th:text="${flight.destination}"></div>
+                                    </div>
+                                </div>
 
-                        <div class="price-tiers">
-                            <div class="price-tier">
-                                <span>Economy Class:</span>
-                                <span class="price-tag" th:text="'€' + ${flight.priceEconomy}"></span>
-                            </div>
-                            <div class="price-tier">
-                                <span>Business Class:</span>
-                                <span class="price-tag" th:text="'€' + ${flight.priceBusiness}"></span>
-                            </div>
-                            <div class="price-tier">
-                                <span>First Class:</span>
-                                <span class="price-tag" th:text="'€' + ${flight.priceFirst}"></span>
-                            </div>
-                        </div>
+                                <!-- Plane & Info -->
+                                <div class="flight-info">
+                                    <p><i class="far fa-clock"></i> <span th:text="${flight.departureTime}"></span></p>
+                                    <p><i class="fa-solid fa-plane-circle-check"></i> <span th:text="${flight.planeModel}"></span></p>
+                                </div>
 
-                        <div class="btn-group">
-                            <a th:href="@{'/book/economy/' + ${flight.flightNumber}}" class="btn btn-economy">Economy</a>
-                            <a th:href="@{'/book/business/' + ${flight.flightNumber}}" class="btn btn-business">Business</a>
-                            <a th:href="@{'/book/first/' + ${flight.flightNumber}}" class="btn btn-first">First</a>
+                                <!-- Compact Prices -->
+                                <div class="price-tiers">
+                                    <div class="price-tier">
+                                        <span class="label">Economy:</span>
+                                        <span th:text="'€' + ${flight.priceEconomy}"></span>
+                                        <a th:href="@{'/book/economy/' + ${flight.flightNumber}}" class="book-btn">Book</a>
+                                    </div>
+                                    <div class="price-tier">
+                                        <span class="label">Business:</span>
+                                        <span th:text="'€' + ${flight.priceBusiness}"></span>
+                                        <a th:href="@{'/book/business/' + ${flight.flightNumber}}" class="book-btn">Book</a>
+                                    </div>
+                                    <div class="price-tier">
+                                        <span class="label">First:</span>
+                                        <span th:text="'€' + ${flight.priceFirst}"></span>
+                                        <a th:href="@{'/book/first/' + ${flight.flightNumber}}" class="book-btn">Book</a>
+                                    </div>
+                                </div>
+
+                            </div>
                         </div>
                     </div>
 
