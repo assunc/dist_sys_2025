@@ -193,7 +193,7 @@
 
 
 
-        }
+
     </style>
     <div class="search-form">
         <h2>Plan Your Perfect Getaway</h2>
@@ -358,7 +358,6 @@
                                         </div>
                                         <div style="margin-top: 12px;">
                                             <form th:action="@{/hotel-info/{hotelId}(hotelId=${hotel.id})}" method="post">
-                                                <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
 
                                                 <input type="hidden" name="startDate" th:value="${#dates.format(startDate, 'yyyy-MM-dd')}" />
                                                 <input type="hidden" name="endDate" th:value="${#dates.format(endDate, 'yyyy-MM-dd')}" />

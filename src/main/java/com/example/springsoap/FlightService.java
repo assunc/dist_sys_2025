@@ -26,7 +26,7 @@ import java.util.stream.Collectors;
 public class FlightService {
     private final HttpClient client = HttpClient.newHttpClient();
     private final ObjectMapper mapper = new ObjectMapper();
-    private static final String BASE_URL = "http://dsg.centralindia.cloudapp.azure.com:8081";
+    private static final String BASE_URL = "https://flights-dfbcajf2dpgsfsha.centralindia-01.azurewebsites.net";
 
     public List<FlightOrder> bookSeats(List<Long> seatIds, Order order) throws IOException, InterruptedException, URISyntaxException {
         List<FlightOrder> flightOrders = new ArrayList<>();

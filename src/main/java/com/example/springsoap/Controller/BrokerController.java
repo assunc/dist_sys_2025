@@ -20,6 +20,8 @@ import com.example.springsoap.UserService;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpSession;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.format.annotation.DateTimeFormat;
 
@@ -572,7 +574,7 @@ public class BrokerController {
             for (FlightOrder flight : userFlightOrders) {
                 String flightNum = flight.getFlightNumber();
                 HttpRequest req = HttpRequest.newBuilder()
-                        .uri(new URI("http://dsg.centralindia.cloudapp.azure.com:8081/flights/flightNumber/" + flightNum))
+                        .uri(new URI("https://flights-dfbcajf2dpgsfsha.centralindia-01.azurewebsites.net/flights/flightNumber/" + flightNum))
                         .GET()
                         .build();
                 HttpResponse<String> resp = client.send(req, HttpResponse.BodyHandlers.ofString());
@@ -656,8 +658,11 @@ public class BrokerController {
             @RequestParam("endDate") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) Date endDate,
             @RequestParam("numberOfPeople") int numberOfPeople,
             @AuthenticationPrincipal OidcUser user,
-            Model model
+            Model model,
+            HttpServletRequest request
     ) {
+
+        request.getSession();
         boolean isLoggedIn = user != null;
         model.addAttribute("isLoggedIn", isLoggedIn);
         model.addAttribute("title", "Hotels + Flights");
@@ -679,6 +684,7 @@ public class BrokerController {
             } catch (Exception e) {
                 model.addAttribute("error", true);
                 model.addAttribute("errorMsg", "Failed to search combo package: " + e.getMessage());
+                return "redirect:/combo";  // prevent rendering during exception
             }
         }
         // Retain the search inputs in the form
