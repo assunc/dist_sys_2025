@@ -98,17 +98,35 @@
       <input type="hidden" name="allSeatsJson" th:value="${seatsJson}" />
       <input type="hidden" name="flight" th:value="${flight.toString}" />
 
-      <div th:if="${seats}">
-        <div th:each="seat, iterStat : ${seats}" class="seat-card">
+      <div th:if="${seats != null and !seats.isEmpty()}">
+        <div th:each="seat : ${seats}" class="seat-card">
           <label th:for="'seat-' + ${seat.seatId}" th:text="'Seat ' + ${seat.seatNumber}">Seat 1A</label>
           <input type="checkbox" th:id="'seat-' + ${seat.seatId}" th:name="'seat-' + ${seat.seatId}"/>
         </div>
       </div>
+      <div th:if="${seats == null or seats.isEmpty()}" style="margin-top: 24px;">
+        <p style="font-weight: bold; color: #d9534f;">No available seats. This class is fully booked.</p>
+      </div>
 
       <div style="display: flex; gap: 10px">
-        <button class="submit-btn" type="submit" th:formaction="@{/add-to-cart}">Add to Shopping Cart</button>
-        <button class="submit-btn" type="submit">Continue to Payment</button>
+        <button
+                class="submit-btn"
+                type="submit"
+                th:formaction="@{/add-to-cart}"
+                th:disabled="${seats == null or seats.isEmpty()}"
+                th:style="${seats == null or seats.isEmpty()} ? 'background-color: #ccc; cursor: not-allowed;' : ''">
+          Add to Shopping Cart
+        </button>
+
+        <button
+                class="submit-btn"
+                type="submit"
+                th:disabled="${seats == null or seats.isEmpty()}"
+                th:style="${seats == null or seats.isEmpty()} ? 'background-color: #ccc; cursor: not-allowed;' : ''">
+          Continue to Payment
+        </button>
       </div>
+
     </form>
 
     <div class="back-link">
