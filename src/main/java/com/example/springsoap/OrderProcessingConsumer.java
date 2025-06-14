@@ -92,30 +92,33 @@ public class OrderProcessingConsumer implements InitializingBean, DisposableBean
         boolean allPending = false;
         boolean allConfirmed = false;
 
+        boolean hotelPending = true;
+        boolean airlinePending = true;
+
         if (order.getStatus().equalsIgnoreCase("processing")) {
             System.out.println("Order was processing, send pending reservations");
-            System.out.println(orderMessage.getReservation().getRoomReservations().size());
-            System.out.println(hotelOrders.size());
             if (!orderMessage.getReservation().getRoomReservations().isEmpty() && hotelOrders.isEmpty()) { // reserve didnt go through
                 try {
-                    allPending = hotelService.reserveOrders(orderMessage.getReservation().getRoomReservations(), order, hotelOrders);
+                    hotelPending = hotelService.reserveOrders(orderMessage.getReservation().getRoomReservations(), order, hotelOrders);
                 } catch (Exception e) {
                     System.err.println("Exception during booking search: " + e.getMessage());
                     e.printStackTrace();
-                    allPending = false;
+                    hotelPending = false;
                 }
             }
 
             if (!orderMessage.getReservation().getFlightReservations().isEmpty() && flightOrders.isEmpty()) { // reserve didnt go through
                 List<Long> seatIds = orderMessage.getReservation().getFlightReservations().stream().map(FlightReservation::getSeatId).toList();
                 try {
-                    allPending &= flightService.reserveSeats(seatIds, order, flightOrders);
+                    hotelPending = flightService.reserveSeats(seatIds, order, flightOrders);
                 } catch (Exception e) {
                     System.err.println("Flight reservation error: " + e.getMessage());
                     e.printStackTrace();
-                    allPending = false;
+                    hotelPending = false;
                 }
             }
+            allPending = hotelPending && airlinePending;
+
             if (allPending) order.setStatus("pending");
             // save so if it fails it can start from here next retry
             orderRepository.save(order);
@@ -125,27 +128,29 @@ public class OrderProcessingConsumer implements InitializingBean, DisposableBean
 
         // --- Phase 2: Confirm if all reserved, else try to cancel ---
         if (allPending || order.getStatus().equalsIgnoreCase("pending")) {
+            boolean hotelConfirmed = true;
+            boolean airlineConfirmed = true;
             System.out.println("Order is processing, send confirmations");
             if (!hotelOrders.isEmpty()) {
                 try {
-                    allConfirmed = hotelService.confirmOrders(order, hotelOrders);
+                    hotelConfirmed = hotelService.confirmOrders(order, hotelOrders);
                 } catch (Exception e) {
                     System.err.println("Exception during booking search: " + e.getMessage());
                     e.printStackTrace();
-                    allConfirmed = false;
+                    hotelConfirmed = false;
                 }
             }
 
             if (!flightOrders.isEmpty()) {
                 try {
-                    allConfirmed &= flightService.confirmSeats(order, flightOrders);
+                    airlineConfirmed = flightService.confirmSeats(order, flightOrders);
                 } catch (Exception e) {
                     System.err.println("Flight confirmation error: " + e.getMessage());
                     e.printStackTrace();
-                    allConfirmed = false;
+                    airlineConfirmed = false;
                 }
             }
-
+            allConfirmed = hotelConfirmed && airlineConfirmed;
 
             if (allConfirmed) {
                 order.setStatus("booked");
@@ -202,29 +207,32 @@ public class OrderProcessingConsumer implements InitializingBean, DisposableBean
         List<FlightOrder> flightOrders = flightOrderRepository.findByOrder(order);
 
         System.out.println("Order " + order.getId() + " ran out of time. Cancelling.");
-        boolean allCanceled = true;
+        boolean allCanceled = false;
+        boolean hotelCanceled = true;
+        boolean airlineCanceled = true;
 
         // Hotel cancel
         if (!orderMessage.getReservation().getRoomReservations().isEmpty()) {
             try {
-                allCanceled = hotelService.cancelOrders(order, hotelOrders, true);
+                hotelCanceled = hotelService.cancelOrders(order, hotelOrders, true);
             } catch (Exception e) {
                 System.err.println("Hotel cancellation error: " + e.getMessage());
                 e.printStackTrace();
-                allCanceled = false;
+                hotelCanceled = false;
             }
         }
 
         // Flight cancel
         if (!flightOrders.isEmpty()) {
             try {
-                allCanceled &= flightService.cancelBookings(flightOrders);
+                airlineCanceled = flightService.cancelBookings(flightOrders);
             } catch (Exception e) {
                 System.err.println("Flight cancellation error: " + e.getMessage());
                 e.printStackTrace();
-                allCanceled = false;
+                airlineCanceled = false;
             }
         }
+        allCanceled = hotelCanceled && airlineCanceled;
 
         order.setStatus("canceled");
         if (allCanceled) {

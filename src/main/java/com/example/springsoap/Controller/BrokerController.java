@@ -40,6 +40,8 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.text.SimpleDateFormat;
 
+import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.*;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
@@ -125,21 +127,28 @@ public class BrokerController {
                                 Model model) throws IOException, InterruptedException, URISyntaxException {
 
         boolean isLoggedIn = user != null;
-
-        String dateStr = new SimpleDateFormat("yyyy-MM-dd").format(departureDate);
-
-        String encodedSource = URLEncoder.encode(source, StandardCharsets.UTF_8);
-        String encodedDestination = URLEncoder.encode(destination, StandardCharsets.UTF_8);
-        String encodedDate = URLEncoder.encode(dateStr, StandardCharsets.UTF_8);
-        List<Flight> flights = flightService.searchFlights(encodedSource, encodedDestination, encodedDate);
+        model.addAttribute("isLoggedIn", isLoggedIn);
+        model.addAttribute("contentTemplate", "flights");
 
         model.addAttribute("departure_date", departureDate);
         model.addAttribute("source", source);
         model.addAttribute("destination", destination);
 
-        model.addAttribute("isLoggedIn", isLoggedIn);
-        model.addAttribute("flights", flights);
-        model.addAttribute("contentTemplate", "flights");
+        if (departureDate.before(Date.from(LocalDate.now().atStartOfDay(ZoneId.systemDefault()).toInstant()))) {
+            model.addAttribute("error", true);
+            model.addAttribute("errorMsg", "Invalid date. Can't search for past flights.");
+            model.addAttribute("flights", List.of());
+        } else {
+            String dateStr = new SimpleDateFormat("yyyy-MM-dd").format(departureDate);
+
+            String encodedSource = URLEncoder.encode(source, StandardCharsets.UTF_8);
+            String encodedDestination = URLEncoder.encode(destination, StandardCharsets.UTF_8);
+            String encodedDate = URLEncoder.encode(dateStr, StandardCharsets.UTF_8);
+            List<Flight> flights = flightService.searchFlights(encodedSource, encodedDestination, encodedDate);
+
+            model.addAttribute("flights", flights);
+            model.addAttribute("error", false);
+        }
 
         return "layout";
     }
@@ -224,14 +233,6 @@ public class BrokerController {
 
 
 
-
-
-
-
-
-
-
-
     @GetMapping("/hotels")
     public String hotels(@AuthenticationPrincipal OidcUser user, Model model) {
         boolean isLoggedIn = user != null;
@@ -259,7 +260,7 @@ public class BrokerController {
         model.addAttribute("isLoggedIn", isLoggedIn);
         model.addAttribute("title", "Hotels");
         model.addAttribute("contentTemplate", "hotels");
-        if (startDate.after(endDate) || startDate.equals(endDate)|| startDate.before(new Date())) {
+        if (startDate.after(endDate) || startDate.equals(endDate)|| startDate.before(Date.from(LocalDate.now().atStartOfDay(ZoneId.systemDefault()).toInstant()))) {
             model.addAttribute("error", true);
             model.addAttribute("errorMsg", "Invalid date range. Start date can't be in the past or after end date.");
             model.addAttribute("hotels", List.of()); // Ensure rooms list is empty on error
@@ -303,7 +304,7 @@ public class BrokerController {
         model.addAttribute("isLoggedIn", isLoggedIn);
         model.addAttribute("title", "Hotel Info");
         model.addAttribute("contentTemplate", "hotel-info");
-        if (startDate.after(endDate) || startDate.equals(endDate)|| startDate.before(new Date())) {
+        if (startDate.after(endDate) || startDate.equals(endDate)|| startDate.before(Date.from(LocalDate.now().atStartOfDay(ZoneId.systemDefault()).toInstant()))) {
             model.addAttribute("error", true);
             model.addAttribute("errorMsg", "Invalid date range. Start date can't be in the past or after end date.");
             model.addAttribute("hotels", List.of()); // Ensure rooms list is empty on error
@@ -443,32 +444,37 @@ public class BrokerController {
         boolean allBookingsBooked = false;
         boolean allBookingsCanceled = false;
 
+        boolean hotelPending = true;
+        boolean airlinePending = true;
+
         // --- Phase 1: Reserve ---
         // Hotel
         if (!reservation.getRoomReservations().isEmpty()) {
             try {
-                allBookingsPending = hotelService.reserveOrders(reservation.getRoomReservations(), newOrder, hotelOrders);
+                hotelPending = hotelService.reserveOrders(reservation.getRoomReservations(), newOrder, hotelOrders);
                 model.addAttribute("error", false);
             } catch (Exception e) {
                 System.err.println("Exception during booking search: " + e.getMessage());
                 e.printStackTrace(); // Print full stack trace for detailed debugging
                 model.addAttribute("error", "Error searching for hotels: " + e.getMessage());
-                allBookingsPending = false;
+                hotelPending = false;
             }
         }
 
         if (!reservation.getFlightReservations().isEmpty()) {
             List<Long> seatIds = reservation.getFlightReservations().stream().map(FlightReservation::getSeatId).toList();
             try {
-                allBookingsPending &= flightService.reserveSeats(seatIds, newOrder, flightOrders);
+                airlinePending = flightService.reserveSeats(seatIds, newOrder, flightOrders);
                 model.addAttribute("error", false);
             } catch (Exception e) {
                 System.err.println("Flight reservation error: " + e.getMessage());
                 e.printStackTrace();
                 model.addAttribute("error", "Error during flight reservation.");
-                allBookingsPending = false;
+                airlinePending = false;
             }
         }
+
+        allBookingsPending = hotelPending && airlinePending;
 
         // Save phase 1 orders
         if (allBookingsPending) newOrder.setStatus("pending");
@@ -476,33 +482,37 @@ public class BrokerController {
         hotelOrderRepository.saveAll(hotelOrders);
         flightOrderRepository.saveAll(flightOrders);
 
+        boolean hotelBooked = true;
+        boolean airlineBooked = true;
 
         if (allBookingsPending) { // Stage 2
             if (!reservation.getRoomReservations().isEmpty()) {
                 try {
-                    allBookingsBooked = hotelService.confirmOrders(newOrder, hotelOrders);
+                    hotelBooked = hotelService.confirmOrders(newOrder, hotelOrders);
                     model.addAttribute("error", false);
                 } catch (Exception e) {
                     System.err.println("Exception during booking search: " + e.getMessage());
                     e.printStackTrace(); // Print full stack trace for detailed debugging
                     model.addAttribute("error", "Error searching for hotels: " + e.getMessage());
-                    allBookingsBooked = false;
+                    hotelBooked = false;
                 }
             }
 
             // Flight
             if (!flightOrders.isEmpty()) {
                 try {
-                    allBookingsBooked &= flightService.confirmSeats(newOrder, flightOrders);
+                    airlineBooked = flightService.confirmSeats(newOrder, flightOrders);
                     model.addAttribute("error", false);
                 } catch (Exception e) {
                     System.err.println("Flight confirmation error: " + e.getMessage());
                     e.printStackTrace();
                     model.addAttribute("error", "Error confirming flight booking.");
-                    allBookingsBooked = false;
+                    airlineBooked = false;
                 }
             }
         }
+
+        allBookingsBooked = hotelBooked && airlineBooked;
 
         // --- Finalize Commit ---
         if (allBookingsBooked) {
@@ -651,20 +661,26 @@ public class BrokerController {
         boolean isLoggedIn = user != null;
         model.addAttribute("isLoggedIn", isLoggedIn);
         model.addAttribute("title", "Hotels + Flights");
+        if (startDate.after(endDate) || startDate.equals(endDate)|| startDate.before(Date.from(LocalDate.now().atStartOfDay(ZoneId.systemDefault()).toInstant()))) {
+            model.addAttribute("error", true);
+            model.addAttribute("errorMsg", "Invalid date range. Start date can't be in the past or after end date.");
+            model.addAttribute("searchPerformed", false);
+        } else {
+            try {
+                List<Hotel> hotels = hotelService.getFreeHotels(startDate, endDate, destination);
+                List<Flight> outboundFlights = flightService.searchFlights(source, destination, new SimpleDateFormat("yyyy-MM-dd").format(startDate));
+                List<Flight> returnFlights = flightService.searchFlights(destination, source, new SimpleDateFormat("yyyy-MM-dd").format(endDate));
 
-        try {
-            List<Hotel> hotels = hotelService.getFreeHotels(startDate, endDate, destination);
-            List<Flight> outboundFlights = flightService.searchFlights(source, destination, new SimpleDateFormat("yyyy-MM-dd").format(startDate));
-            List<Flight> returnFlights = flightService.searchFlights(destination, source, new SimpleDateFormat("yyyy-MM-dd").format(endDate));
-
-            model.addAttribute("hotels", hotels);
-            model.addAttribute("outboundFlights", outboundFlights);
-            model.addAttribute("returnFlights", returnFlights);
-            model.addAttribute("searchPerformed", true);
-        } catch (Exception e) {
-            model.addAttribute("error", "Failed to search combo package: " + e.getMessage());
+                model.addAttribute("hotels", hotels);
+                model.addAttribute("outboundFlights", outboundFlights);
+                model.addAttribute("returnFlights", returnFlights);
+                model.addAttribute("searchPerformed", true);
+                model.addAttribute("error", false);
+            } catch (Exception e) {
+                model.addAttribute("error", true);
+                model.addAttribute("errorMsg", "Failed to search combo package: " + e.getMessage());
+            }
         }
-
         // Retain the search inputs in the form
         model.addAttribute("source", source);
         model.addAttribute("destination", destination);

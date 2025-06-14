@@ -19,10 +19,7 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.time.Duration;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
@@ -299,11 +296,17 @@ public class FlightService {
                         int seatId = Integer.parseInt(entry.getKey().split("-")[1]);
                         Optional<Seat> seat = allSeats.stream().filter((s) -> s.getSeatId() == seatId).findFirst();
                         if (seat.isPresent()) {
-                            reservation.addFlightReservation(new FlightReservation(
-                                    new Flight(allRequestParams.get("flight")),
-                                    seat.get().getSeatNumber(),
-                                    seat.get().getSeatId()
-                            ));
+                            Flight flight = new Flight(allRequestParams.get("flight"));
+                            if (reservation.getFlightReservations().stream()
+                                    .filter((flightRes) -> Objects.equals(flightRes.getFlight().getFlightNumber(), flight.getFlightNumber()))
+                                    .filter((flightRes) -> Objects.equals(flightRes.getSeatId(), seat.get().getSeatId()))
+                                    .toList().isEmpty()) {
+                                reservation.addFlightReservation(new FlightReservation(
+                                        flight,
+                                        seat.get().getSeatNumber(),
+                                        seat.get().getSeatId()
+                                ));
+                            }
                         }
                     }
                 }

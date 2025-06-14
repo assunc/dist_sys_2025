@@ -112,7 +112,7 @@
     </form>
 
     <div class="back-link">
-      <a th:href="@{/flights}"><i class="fa fa-arrow-left"></i> Back to Flights</a>
+      <a th:href="@{/flight-info/{flightId}(flightId=${flight.flightNumber})}"><i class="fa fa-arrow-left"></i> Back to Flight info</a>
     </div>
   </div>
 </div>

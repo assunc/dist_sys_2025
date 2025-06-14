@@ -354,15 +354,22 @@ public class HotelService {
             } catch (ParseException e) {
                 throw new RuntimeException(e);
             }
+
             // Iterate through all request parameters to find selected room checkboxes
             // And the value is "on" when checked.
             for (Map.Entry<String, String> entry : allRequestParams.entrySet()) {
                 if (entry.getKey().startsWith("Room") && entry.getValue().equals("on")) {
-                    reservation.addRoomReservation(new RoomReservation(
-                            new Room(entry.getKey()),
-                            allRequestParams.get("name"),
-                            startDate, endDate
-                    ));
+                    Room room = new Room(entry.getKey());
+                    if (reservation.getRoomReservations().stream()
+                            .filter((roomRes) -> roomRes.getRoom().getId() == room.getId())
+                            .filter((roomRes) -> roomRes.getStartDate().before(endDate) && roomRes.getEndDate().after(startDate))
+                            .toList().isEmpty()) { // check if there are no overlapping reservation in the shopping cart
+                        reservation.addRoomReservation(new RoomReservation(
+                                room,
+                                allRequestParams.get("name"),
+                                startDate, endDate
+                        ));
+                    }
                 }
             }
         }
