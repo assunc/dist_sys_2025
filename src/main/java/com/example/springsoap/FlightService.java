@@ -181,7 +181,14 @@ public class FlightService {
 
         return allBooked;
     }
-
+    public HttpResponse<String> getFlightDetails(String flightNum) throws IOException, InterruptedException, URISyntaxException {
+        HttpRequest req = HttpRequest.newBuilder()
+                .uri(new URI("https://flights-dfbcajf2dpgsfsha.centralindia-01.azurewebsites.net/flights/flightNumber/" + flightNum))
+                .GET()
+                .build();
+        HttpResponse<String> resp = client.send(req, HttpResponse.BodyHandlers.ofString());
+        return resp;
+    }
 
 
     public List<Flight> getAllFlights() throws IOException, InterruptedException, URISyntaxException {

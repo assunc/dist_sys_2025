@@ -295,7 +295,7 @@ public class BrokerController {
         return "layout";
     }
 
-    @PostMapping("/hotel-info/{hotelId}")
+    @GetMapping("/hotel-info/{hotelId}")
     public String hotelInfo(@PathVariable int hotelId,
                             @RequestParam("startDate") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) Date startDate,
                             @RequestParam("endDate") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) Date endDate,
@@ -577,7 +577,7 @@ public class BrokerController {
                         .uri(new URI("https://flights-dfbcajf2dpgsfsha.centralindia-01.azurewebsites.net/flights/flightNumber/" + flightNum))
                         .GET()
                         .build();
-                HttpResponse<String> resp = client.send(req, HttpResponse.BodyHandlers.ofString());
+                HttpResponse<String> resp = flightService.getFlightDetails(flightNum);
                 if (resp.statusCode() == 200) {
                     JsonNode flightJson = mapper.readTree(resp.body());
                     String departureTime = flightJson.get("departureTime").asText();
