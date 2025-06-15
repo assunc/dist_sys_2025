@@ -23,6 +23,9 @@ public class Hotelinfo {
 
     private String description;
 
+    @Column(name = "image")
+    private String imageURL;
+
     // Getters and setters
 
     public Integer getId() {
@@ -75,5 +78,13 @@ public class Hotelinfo {
 
     public void setDescription(String description) {
         this.description = description;
+    }
+
+    public String getImageUrl() {
+        return imageURL;
+    }
+
+    public void setImageUrl(String imageURL) {
+        this.imageURL = imageURL;
     }
 }
