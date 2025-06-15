@@ -3,7 +3,6 @@
 <head>
     <meta charset="UTF-8">
     <title>Flight Details</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 </head>
 <body>
 <div th:fragment="content">
@@ -12,7 +11,7 @@
             font-family: sans-serif;
             background-color: #f8f9fa;
             margin: 0;
-            /*padding: 20px;*/
+        /padding: 20px;/
         }
 
         .details-container {
@@ -162,20 +161,45 @@
         <div class="prices">
             <div class="label" style="margin-bottom: 10px;">Prices</div>
 
-            <div class="price-row">
+            <!--            <div class="price-row">-->
+            <!--                <span class="label">Economy:</span>-->
+            <!--                <a th:href="@{'/book/economy/' + ${flight.flightNumber}}" th:text="'€' + ${flight.priceEconomy}">€100.00</a>-->
+            <!--            </div>-->
+            <div class="price-row" style="display: flex; align-items: center; gap: 12px;">
                 <span class="label">Economy:</span>
-                <a th:href="@{'/book/economy/' + ${flight.flightNumber}}" th:text="'€' + ${flight.priceEconomy}">€100.00</a>
+                <span th:text="'€' + ${flight.priceEconomy}">€100.00</span>
+                <a th:href="@{'/book/economy/' + ${flight.flightNumber}}"
+                   style="background-color: #0071c2; color: white; padding: 6px 12px; border-radius: 6px; text-decoration: none; font-weight: 500;">
+                    Book now
+                </a>
             </div>
-
-            <div class="price-row">
+            <!--            <div class="price-row">-->
+            <!--                <span class="label">Business:</span>-->
+            <!--                <a th:href="@{'/book/business/' + ${flight.flightNumber}}" th:text="'€' + ${flight.priceBusiness}">€200.00</a>-->
+            <!--            </div>-->
+            <div class="price-row" style="display: flex; align-items: center; gap: 12px;">
                 <span class="label">Business:</span>
-                <a th:href="@{'/book/business/' + ${flight.flightNumber}}" th:text="'€' + ${flight.priceBusiness}">€200.00</a>
+                <span th:text="'€' + ${flight.priceBusiness}">€200.00</span>
+                <a th:href="@{'/book/business/' + ${flight.flightNumber}}"
+                   style="background-color: #0071c2; color: white; padding: 6px 12px; border-radius: 6px; text-decoration: none; font-weight: 500;">
+                    Book now
+                </a>
             </div>
 
-            <div class="price-row">
-                <span class="label">First:</span>
-                <a th:href="@{'/book/first/' + ${flight.flightNumber}}" th:text="'€' + ${flight.priceFirst}">€400.00</a>
+
+            <!--            <div class="price-row">-->
+            <!--                <span class="label">First:</span>-->
+            <!--                <a th:href="@{'/book/first/' + ${flight.flightNumber}}" th:text="'€' + ${flight.priceFirst}">€400.00</a>-->
+            <!--            </div>-->
+            <div class="price-row" style="display: flex; align-items: center; gap: 12px;">
+                <span class="label">First Class:</span>
+                <span th:text="'€' + ${flight.priceFirst}">€400.00</span>
+                <a th:href="@{'/book/first/' + ${flight.flightNumber}}"
+                   style="background-color: #0071c2; color: white; padding: 6px 12px; border-radius: 6px; text-decoration: none; font-weight: 500;">
+                    Book now
+                </a>
             </div>
+
         </div>
 
         <div class="back-link">
