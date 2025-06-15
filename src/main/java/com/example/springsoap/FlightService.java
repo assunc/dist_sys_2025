@@ -82,31 +82,36 @@ public class FlightService {
 
         return flightOrders;
     }
-    public boolean reserveSeats(List<Long> seatIds, Order order, List<FlightOrder> flightOrders) throws IOException, InterruptedException, URISyntaxException {
+    public boolean reserveSeats(List<Long> seatIds, Order order, List<FlightOrder> flightOrders)
+            throws IOException, InterruptedException, URISyntaxException {
+
         boolean allPending = true;
 
         for (Long seatId : seatIds) {
-            System.out.println("Seat IDs for reserving "+seatIds);
+            System.out.println("Seat IDs for reserving " + seatIds);
+
             // Step 1: Reserve the seat
             HttpRequest reserveRequest = HttpRequest.newBuilder()
                     .uri(new URI(BASE_URL + "/seats/" + seatId + "/reserve"))
                     .PUT(HttpRequest.BodyPublishers.noBody())
                     .build();
-            HttpResponse<String> reserveResponse= client.send(reserveRequest, HttpResponse.BodyHandlers.ofString());
-            System.out.println("Reserve Response: "+reserveResponse.body());
+            HttpResponse<String> reserveResponse = client.send(reserveRequest, HttpResponse.BodyHandlers.ofString());
+            System.out.println("Reserve Response: " + reserveResponse.body());
 
-
-            // Step 2: Create booking with status=pending
-            System.out.println("SeatID before the booking: "+seatId);
+            // Step 2: Create booking (supplier defaults status to PENDING)
+            System.out.println("SeatID before the booking: " + seatId);
             HttpRequest bookingRequest = HttpRequest.newBuilder()
-                    .uri(new URI(BASE_URL + "/bookings?seatId=" + seatId + "&status=pending"))
+                    .uri(new URI(BASE_URL + "/bookings?seatId=" + seatId))
                     .POST(HttpRequest.BodyPublishers.noBody())
                     .build();
             HttpResponse<String> bookingResponse = client.send(bookingRequest, HttpResponse.BodyHandlers.ofString());
-            System.out.println("Booking Response: "+bookingResponse.body());
+            System.out.println("Booking Response: " + bookingResponse.body());
+
             JsonNode bookingJson = mapper.readTree(bookingResponse.body());
             long bookingId = bookingJson.get("id").asLong();
-            System.out.println("Booking ID: "+bookingId);
+            String bookingStatus = bookingJson.get("status").asText();
+
+            System.out.println("Booking ID: " + bookingId + ", Status: " + bookingStatus);
 
             // Step 3: Get seat and flight info
             HttpRequest seatRequest = HttpRequest.newBuilder()
@@ -137,23 +142,23 @@ public class FlightService {
             flightOrder.setSeatNumber(seatNumber);
             flightOrder.setFlightNumber(formattedFlightNumber);
             flightOrder.setBookingId(bookingId);
-            flightOrder.setStatus("pending");
+            flightOrder.setStatus(bookingStatus);
             flightOrder.setAirlineSupplier(null);
 
             flightOrders.add(flightOrder);
         }
 
-        // Ensure all are pending
         for (FlightOrder fo : flightOrders) {
             if (!"pending".equalsIgnoreCase(fo.getStatus())) {
                 allPending = false;
                 break;
             }
         }
-        System.out.println("All Pending orders: "+allPending);
 
+        System.out.println("All Pending orders: " + allPending);
         return allPending;
     }
+
 
 
     public boolean confirmSeats(Order order, List<FlightOrder> flightOrders) throws IOException, InterruptedException, URISyntaxException {
