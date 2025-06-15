@@ -21,6 +21,7 @@ public class FlightEntity {
     private BigDecimal priceBusiness;
     private BigDecimal priceFirst;
 
+    // Getters and Setters
     public Integer getFlightNumber() {
         return flightNumber;
     }

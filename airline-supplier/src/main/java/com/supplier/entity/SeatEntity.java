@@ -4,26 +4,27 @@ import jakarta.persistence.*;
 import java.math.BigDecimal;
 
 @Entity
-@Table(name = "seats")
+@Table(name = "seats")  // maps to "seats" table in the DB
 public class SeatEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long seatId;
 
-    private Integer flightNumber;
+    private Integer flightNumber;  // foreign key to flights table
     private String seatNumber;
 
     @Enumerated(EnumType.STRING)
     private SeatClass seatClass;
 
     private Boolean available;
-    private BigDecimal price;
 
+    // Enum for seat class
     public enum SeatClass {
         economy, business, first
     }
 
+    // Getters and Setters
     public Long getSeatId() {
         return seatId;
     }
@@ -64,11 +65,5 @@ public class SeatEntity {
         this.available = available;
     }
 
-    public BigDecimal getPrice() {
-        return price;
-    }
 
-    public void setPrice(BigDecimal price) {
-        this.price = price;
-    }
 }
