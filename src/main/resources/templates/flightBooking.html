@@ -92,6 +92,9 @@
   <div class="booking-container">
     <h2>Available Seats</h2>
 
+    <div th:if="${error}" class="alert alert-danger" role="alert">
+      <p th:text="${errorMsg}"></p>
+    </div>
     <div class="subtitle" th:text="'Seat Type: ' + ${classType}">Seat Type: business</div>
 
     <form id="seatForm" th:action="@{/payment}" method="post">

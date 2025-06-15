@@ -43,4 +43,12 @@ public class Reservation {
         }
         return newRes;
     }
+
+    @Override
+    public String toString() {
+        return "Reservation{" +
+                "roomReservations=" + roomReservations +
+                ", flightReservations=" + flightReservations +
+                '}';
+    }
 }

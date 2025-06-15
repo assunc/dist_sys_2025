@@ -6,6 +6,7 @@ import com.example.springsoap.Model.Flight;
 import com.example.springsoap.Model.FlightReservation;
 import com.example.springsoap.Model.Reservation;
 import com.example.springsoap.Model.Seat;
+import com.example.springsoap.Repository.AirlineSupplierRepository;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -24,64 +25,16 @@ import java.util.stream.Collectors;
 
 @Service
 public class FlightService {
+    private final AirlineSupplierRepository airlineSupplierRepository;
+
     private final HttpClient client = HttpClient.newHttpClient();
     private final ObjectMapper mapper = new ObjectMapper();
     private static final String BASE_URL = "https://flights-dfbcajf2dpgsfsha.centralindia-01.azurewebsites.net";
 
-    public List<FlightOrder> bookSeats(List<Long> seatIds, Order order) throws IOException, InterruptedException, URISyntaxException {
-        List<FlightOrder> flightOrders = new ArrayList<>();
-
-        for (Long seatId : seatIds) {
-            HttpRequest reserveRequest = HttpRequest.newBuilder()
-                    .uri(new URI(BASE_URL + "/seats/" + seatId + "/reserve"))
-                    .PUT(HttpRequest.BodyPublishers.noBody())
-                    .build();
-            client.send(reserveRequest, HttpResponse.BodyHandlers.ofString());
-
-            HttpRequest bookingRequest = HttpRequest.newBuilder()
-                    .uri(new URI(BASE_URL + "/bookings?seatId=" + seatId + "&status=booked"))
-                    .POST(HttpRequest.BodyPublishers.noBody())
-                    .build();
-            HttpResponse<String> bookingResponse = client.send(bookingRequest, HttpResponse.BodyHandlers.ofString());
-            JsonNode bookingJson = mapper.readTree(bookingResponse.body());
-            long bookingId = bookingJson.get("id").asLong();
-
-            HttpRequest seatRequest = HttpRequest.newBuilder()
-                    .uri(new URI(BASE_URL + "/seats/" + seatId))
-                    .GET()
-                    .build();
-            HttpResponse<String> seatResponse = client.send(seatRequest, HttpResponse.BodyHandlers.ofString());
-            JsonNode seatJson = mapper.readTree(seatResponse.body());
-
-            String seatNumber = seatJson.get("seatNumber").asText();
-            long flightId = seatJson.get("flightNumber").asLong();
-
-            HttpRequest flightRequest = HttpRequest.newBuilder()
-                    .uri(new URI(BASE_URL + "/flights/" + flightId))
-                    .GET()
-                    .build();
-            HttpResponse<String> flightResponse = client.send(flightRequest, HttpResponse.BodyHandlers.ofString());
-            JsonNode flightJson = mapper.readTree(flightResponse.body());
-
-            String source = flightJson.get("source").asText();
-            String destination = flightJson.get("destination").asText();
-            String flightCode = flightJson.get("flightNumber").asText();
-
-            String formattedFlightNumber = source + "-" + destination + "-" + flightCode;
-
-            FlightOrder flightOrder = new FlightOrder();
-            flightOrder.setOrder(order);
-            flightOrder.setSeatNumber(seatNumber);
-            flightOrder.setFlightNumber(formattedFlightNumber);
-            flightOrder.setBookingId(bookingId);
-            flightOrder.setStatus("booked");
-            flightOrder.setAirlineSupplier(null);
-
-            flightOrders.add(flightOrder);
-        }
-
-        return flightOrders;
+    public FlightService(AirlineSupplierRepository airlineSupplierRepository) {
+        this.airlineSupplierRepository = airlineSupplierRepository;
     }
+
     public boolean reserveSeats(List<Long> seatIds, Order order, List<FlightOrder> flightOrders)
             throws IOException, InterruptedException, URISyntaxException {
 
@@ -99,12 +52,14 @@ public class FlightService {
             System.out.println("Reserve Response: " + reserveResponse.body());
 
             // Step 2: Create booking (supplier defaults status to PENDING)
+            if (reserveResponse.statusCode() != 200) return false;
             System.out.println("SeatID before the booking: " + seatId);
             HttpRequest bookingRequest = HttpRequest.newBuilder()
                     .uri(new URI(BASE_URL + "/bookings?seatId=" + seatId))
                     .POST(HttpRequest.BodyPublishers.noBody())
                     .build();
             HttpResponse<String> bookingResponse = client.send(bookingRequest, HttpResponse.BodyHandlers.ofString());
+            if (bookingResponse.statusCode() != 200) return false;
             System.out.println("Booking Response: " + bookingResponse.body());
 
             JsonNode bookingJson = mapper.readTree(bookingResponse.body());
@@ -119,6 +74,7 @@ public class FlightService {
                     .GET()
                     .build();
             HttpResponse<String> seatResponse = client.send(seatRequest, HttpResponse.BodyHandlers.ofString());
+            if (seatResponse.statusCode() != 200) return false;
             JsonNode seatJson = mapper.readTree(seatResponse.body());
             String seatNumber = seatJson.get("seatNumber").asText();
             long flightId = seatJson.get("flightNumber").asLong();
@@ -129,10 +85,12 @@ public class FlightService {
                     .GET()
                     .build();
             HttpResponse<String> flightResponse = client.send(flightRequest, HttpResponse.BodyHandlers.ofString());
+            if (seatResponse.statusCode() != 200) return false;
             JsonNode flightJson = mapper.readTree(flightResponse.body());
             String source = flightJson.get("source").asText();
             String destination = flightJson.get("destination").asText();
             String flightCode = flightJson.get("flightNumber").asText();
+            String departureTime = flightJson.get("departureTime").asText();
 
             String formattedFlightNumber = source + "-" + destination + "-" + flightCode;
 
@@ -143,7 +101,8 @@ public class FlightService {
             flightOrder.setFlightNumber(formattedFlightNumber);
             flightOrder.setBookingId(bookingId);
             flightOrder.setStatus(bookingStatus);
-            flightOrder.setAirlineSupplier(null);
+            flightOrder.setAirlineSupplier(airlineSupplierRepository.getReferenceById(1));
+            flightOrder.setDepartureTime(departureTime);
 
             flightOrders.add(flightOrder);
         }
@@ -186,15 +145,6 @@ public class FlightService {
 
         return allBooked;
     }
-    public HttpResponse<String> getFlightDetails(String flightNum) throws IOException, InterruptedException, URISyntaxException {
-        HttpRequest req = HttpRequest.newBuilder()
-                .uri(new URI("https://flights-dfbcajf2dpgsfsha.centralindia-01.azurewebsites.net/flights/flightNumber/" + flightNum))
-                .GET()
-                .build();
-        HttpResponse<String> resp = client.send(req, HttpResponse.BodyHandlers.ofString());
-        return resp;
-    }
-
 
     public List<Flight> getAllFlights() throws IOException, InterruptedException, URISyntaxException {
         HttpRequest request = HttpRequest.newBuilder()
@@ -202,8 +152,14 @@ public class FlightService {
                 .GET()
                 .build();
         HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
-        List<Flight> flights = mapper.readValue(response.body(), new TypeReference<>() {});
-
+        if (response.statusCode() != 200) return null;
+        List<Flight> flights;
+        try {
+            flights = mapper.readValue(response.body(), new TypeReference<>() {
+            });
+        } catch (JsonProcessingException e) {
+            return null;
+        }
         for (Flight flight : flights) {
             Duration duration = Duration.between(
                     flight.getDepartureTime().toLocalDateTime(),
@@ -228,6 +184,7 @@ public class FlightService {
                 .build();
 
         HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+        if (response.statusCode() != 200) return null;
         List<Flight> allFlights = mapper.readValue(response.body(), new TypeReference<>() {});
 
         // Normalize search terms
@@ -254,6 +211,7 @@ public class FlightService {
                 .GET()
                 .build();
         HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+        if (response.statusCode() != 200) return null;
         return mapper.readValue(response.body(), Flight.class);
     }
 
@@ -263,6 +221,7 @@ public class FlightService {
                 .GET()
                 .build();
         HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+        if (response.statusCode() != 200) return null;
         return mapper.readValue(response.body(), new TypeReference<>() {});
     }
 

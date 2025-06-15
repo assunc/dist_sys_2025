@@ -31,4 +31,13 @@ public class RoomReservation {
         return endDate;
     }
 
+    @Override
+    public String toString() {
+        return "RoomReservation{" +
+                "room=" + room +
+                ", hotelName='" + hotelName + '\'' +
+                ", startDate=" + startDate +
+                ", endDate=" + endDate +
+                '}';
+    }
 }

@@ -113,9 +113,17 @@ public class BrokerController {
         boolean isLoggedIn = user != null;
 
         List<Flight> flights = flightService.getAllFlights();
+        if (flights == null) {
+            model.addAttribute("flights", List.of());
+            model.addAttribute("error", true);
+            model.addAttribute("errorMsg", "Flight supplier is down at the moment. Try again later");
+
+        } else {
+            model.addAttribute("flights", flights);
+            model.addAttribute("error", false);
+        }
 
         model.addAttribute("title", "Flights");
-        model.addAttribute("flights", flights);
         model.addAttribute("isLoggedIn", isLoggedIn);
         model.addAttribute("contentTemplate", "flights");
         return "layout";
@@ -147,9 +155,14 @@ public class BrokerController {
             String encodedDestination = URLEncoder.encode(destination, StandardCharsets.UTF_8);
             String encodedDate = URLEncoder.encode(dateStr, StandardCharsets.UTF_8);
             List<Flight> flights = flightService.searchFlights(encodedSource, encodedDestination, encodedDate);
-
-            model.addAttribute("flights", flights);
-            model.addAttribute("error", false);
+            if (flights == null) {
+                model.addAttribute("flights", List.of());
+                model.addAttribute("error", true);
+                model.addAttribute("errorMsg", "Flight supplier is down at the moment. Try again later.");
+            } else {
+                model.addAttribute("flights", flights);
+                model.addAttribute("error", false);
+            }
         }
 
         return "layout";
@@ -160,7 +173,14 @@ public class BrokerController {
         boolean isLoggedIn = user != null;
 
         Flight flight = flightService.getFlightById(id);
-        model.addAttribute("flight", flight);
+        if (flight == null) {
+            model.addAttribute("flight", List.of());
+            model.addAttribute("error", true);
+            model.addAttribute("errorMsg", "Flight supplier is down at the moment. Try again later.");
+        } else {
+            model.addAttribute("flight", flight);
+            model.addAttribute("error", false);
+        }
         model.addAttribute("contentTemplate", "flight-info");
         model.addAttribute("isLoggedIn", isLoggedIn);
         return "layout";
@@ -182,12 +202,20 @@ public class BrokerController {
 
         // Fetch flight details
         Flight flight = flightService.getFlightById(flightNumber);
+        if (flight == null || seats == null) {
+            model.addAttribute("flight", List.of());
+            model.addAttribute("seats", List.of());
+            model.addAttribute("error", true);
+            model.addAttribute("errorMsg", "Flight supplier is down at the moment. Try again later.");
+        } else {
+            model.addAttribute("flight", flight);
+            model.addAttribute("seats", seats);
+            model.addAttribute("error", false);
+        }
 
         model.addAttribute("classType", classType);
         model.addAttribute("flightNumber", flightNumber);
-        model.addAttribute("seats", seats);
         model.addAttribute("seatsJson", seatsJson);
-        model.addAttribute("flight", flight);
         model.addAttribute("isLoggedIn", user != null);
         model.addAttribute("contentTemplate", "flightBooking");
 
@@ -352,12 +380,24 @@ public class BrokerController {
     @PostMapping("/add-to-cart")
     public String addToCart(@RequestParam Map<String, String> allRequestParams, @AuthenticationPrincipal OidcUser user, Model model) {
         boolean isLoggedIn = user != null;
-        model.addAttribute("isLoggedIn", isLoggedIn);
-        model.addAttribute("title", "Payment Information");
 
         hotelService.addHotelReservations(allRequestParams, reservation);
         flightService.addFlightReservations(allRequestParams, reservation);
 
+        return "redirect:/shopping-cart";
+    }
+
+    @PostMapping("/remove-room-reservation")
+    public String removeRoomReservation(@RequestParam("roomReservation") int roomReservation, @AuthenticationPrincipal OidcUser user, Model model) {
+        boolean isLoggedIn = user != null;
+        reservation.getRoomReservations().remove(roomReservation);
+        return "redirect:/shopping-cart";
+    }
+
+    @PostMapping("/remove-flight-reservation")
+    public String removeFlightReservation(@RequestParam("flightReservation") int flightReservation, @AuthenticationPrincipal OidcUser user, Model model) {
+        boolean isLoggedIn = user != null;
+        reservation.getFlightReservations().remove(flightReservation);
         return "redirect:/shopping-cart";
     }
 
@@ -517,7 +557,7 @@ public class BrokerController {
         allBookingsBooked = hotelBooked && airlineBooked;
 
         // --- Finalize Commit ---
-        if (allBookingsBooked) {
+        if (allBookingsPending && allBookingsBooked) {
             reservation.clear();
             orderRepository.save(newOrder);
             hotelOrderRepository.saveAll(hotelOrders);
@@ -559,31 +599,16 @@ public class BrokerController {
             List<Order> userOrders = orderRepository.findByUser(currentUser);
 
             // Hotel Orders
-            List<HotelOrder> userHotelOrders = new ArrayList<>();
-            for (Order order : userOrders) {
-                userHotelOrders.addAll(hotelOrderRepository.findByOrder(order));
-            }
+            List<HotelOrder> userHotelOrders = new ArrayList<>(hotelOrderRepository.findByOrderIn(userOrders));
             userHotelOrders.sort(Comparator.comparing(HotelOrder::getStartDate));
             model.addAttribute("hotelOrders", userHotelOrders);
 
             // Flight Orders
             List<FlightOrder> userFlightOrders = flightOrderRepository.findByOrderIn(userOrders);
-            HttpClient client = HttpClient.newHttpClient();
-            ObjectMapper mapper = new ObjectMapper();
 
-            for (FlightOrder flight : userFlightOrders) {
-                String flightNum = flight.getFlightNumber();
-                HttpRequest req = HttpRequest.newBuilder()
-                        .uri(new URI("https://flights-dfbcajf2dpgsfsha.centralindia-01.azurewebsites.net/flights/flightNumber/" + flightNum))
-                        .GET()
-                        .build();
-                HttpResponse<String> resp = flightService.getFlightDetails(flightNum);
-                if (resp.statusCode() == 200) {
-                    JsonNode flightJson = mapper.readTree(resp.body());
-                    String departureTime = flightJson.get("departureTime").asText();
-                    flight.setStatus(flight.getStatus() + " @ " + departureTime);
-                }
-            }
+//            for (FlightOrder flight : userFlightOrders) {
+//                flight.setStatus(flight.getStatus() + " @ " + flightService.getDepartureTime(flight.getFlightNumber()));
+//            }
 
             model.addAttribute("flightOrders", userFlightOrders);
         } else {
@@ -675,6 +700,13 @@ public class BrokerController {
                 List<Hotel> hotels = hotelService.getFreeHotels(startDate, endDate, destination);
                 List<Flight> outboundFlights = flightService.searchFlights(source, destination, new SimpleDateFormat("yyyy-MM-dd").format(startDate));
                 List<Flight> returnFlights = flightService.searchFlights(destination, source, new SimpleDateFormat("yyyy-MM-dd").format(endDate));
+                if (outboundFlights == null || returnFlights == null) {
+                    model.addAttribute("hotels", hotels);
+                    model.addAttribute("outboundFlights", List.of());
+                    model.addAttribute("returnFlights", List.of());
+                    model.addAttribute("searchPerformed", false);
+                    model.addAttribute("error", true);
+                }
 
                 model.addAttribute("hotels", hotels);
                 model.addAttribute("outboundFlights", outboundFlights);

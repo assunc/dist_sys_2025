@@ -25,4 +25,12 @@ public class OrderProcessingMessage implements java.io.Serializable {
     public void setReservation(Reservation reservation) {
         this.reservation = reservation;
     }
+
+    @Override
+    public String toString() {
+        return "OrderProcessingMessage{" +
+                "orderId=" + orderId +
+                ", reservation=" + reservation +
+                '}';
+    }
 }

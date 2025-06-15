@@ -11,7 +11,7 @@ public class HotelOrder {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "order_id", nullable = false)
     private Order order;
 

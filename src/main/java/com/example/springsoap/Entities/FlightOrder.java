@@ -31,15 +31,18 @@ public class FlightOrder {
     @Column(name = "status", length = 500)
     private String status;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "airlinesupplier_id") // optional FK
     private AirlineSupplier airlineSupplier;
+
+    @Column(name = "departure_time", length = 50)
+    private String departureTime;
 
     // ---------- Constructors ----------
     public FlightOrder() {
     }
 
-    public FlightOrder(Order order, String flightNumber, String seatNumber, Long bookingId, String status, AirlineSupplier airlineSupplier) {
+    public FlightOrder(Order order, String flightNumber, String seatNumber, Long bookingId, String status, AirlineSupplier airlineSupplier, String departureTime) {
         this.order = order;
         this.flightNumber = flightNumber;
         this.seatNumber = seatNumber;
@@ -47,6 +50,7 @@ public class FlightOrder {
 
         this.status = status;
         this.airlineSupplier = airlineSupplier;
+        this.departureTime = departureTime;
     }
 
 
@@ -105,17 +109,25 @@ public class FlightOrder {
         this.airlineSupplier = airlineSupplier;
     }
 
+    public String getDepartureTime() {
+        return departureTime;
+    }
+
+    public void setDepartureTime(String departureTime) {
+        this.departureTime = departureTime;
+    }
+
     @Override
     public String toString() {
         return "FlightOrder{" +
                 "id=" + id +
-                ", order=" + (order != null ? order.getId() : "null") +
+                ", order=" + order +
                 ", flightNumber='" + flightNumber + '\'' +
                 ", seatNumber='" + seatNumber + '\'' +
                 ", bookingId=" + bookingId +
-
                 ", status='" + status + '\'' +
-                ", airlineSupplier=" + (airlineSupplier != null ? airlineSupplier.getName() : "null") +
+                ", airlineSupplier=" + airlineSupplier +
+                ", departureTime='" + departureTime + '\'' +
                 '}';
     }
 }

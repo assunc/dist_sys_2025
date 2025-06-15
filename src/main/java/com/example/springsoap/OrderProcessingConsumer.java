@@ -110,11 +110,11 @@ public class OrderProcessingConsumer implements InitializingBean, DisposableBean
             if (!orderMessage.getReservation().getFlightReservations().isEmpty() && flightOrders.isEmpty()) { // reserve didnt go through
                 List<Long> seatIds = orderMessage.getReservation().getFlightReservations().stream().map(FlightReservation::getSeatId).toList();
                 try {
-                    hotelPending = flightService.reserveSeats(seatIds, order, flightOrders);
+                    airlinePending = flightService.reserveSeats(seatIds, order, flightOrders);
                 } catch (Exception e) {
                     System.err.println("Flight reservation error: " + e.getMessage());
                     e.printStackTrace();
-                    hotelPending = false;
+                    airlinePending = false;
                 }
             }
             allPending = hotelPending && airlinePending;
@@ -130,7 +130,7 @@ public class OrderProcessingConsumer implements InitializingBean, DisposableBean
         if (allPending || order.getStatus().equalsIgnoreCase("pending")) {
             boolean hotelConfirmed = true;
             boolean airlineConfirmed = true;
-            System.out.println("Order is processing, send confirmations");
+            System.out.println("Order is pending, send confirmations");
             if (!hotelOrders.isEmpty()) {
                 try {
                     hotelConfirmed = hotelService.confirmOrders(order, hotelOrders);

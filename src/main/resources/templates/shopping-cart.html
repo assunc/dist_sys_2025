@@ -1,6 +1,23 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org">
 <div th:fragment="content">
+  <style>
+    .remove-button {
+        margin-top: 15px;
+        background-color: #dc3545;
+        color: white;
+        border: none;
+        padding: 8px 16px;
+        border-radius: 4px;
+        cursor: pointer;
+        font-weight: bold;
+        transition: background-color 0.2s ease;
+    }
+
+    .remove-button:hover {
+        background-color: #c82333;
+    }
+  </style>
   <h2>My Bookings</h2>
 
   <div>
@@ -9,11 +26,15 @@
       <div th:if="${!reservation.getRoomReservations().isEmpty()}">
         <h4>Hotel Bookings</h4>
         <ul style="list-style: none; padding: 0;">
-          <li th:each="roomRes : ${reservation.roomReservations}" style="border: 1px solid #ddd; margin-bottom: 10px; padding: 10px;">
+          <li th:each="roomRes, iter : ${reservation.roomReservations}" style="border: 1px solid #ddd; margin-bottom: 10px; padding: 10px;">
             <strong>Hotel:</strong> <span th:text="${roomRes.hotelName}"></span><br/>
             <strong>Room Number:</strong> <span th:text="${roomRes.room.number}"></span><br/>
             <strong>Check-in:</strong> <span th:text="${#dates.format(roomRes.startDate, 'dd MMMM yyyy')}"></span><br/>
             <strong>Check-out:</strong> <span th:text="${#dates.format(roomRes.endDate, 'dd MMMM yyyy')}"></span><br/>
+            <form th:action="@{/remove-room-reservation}" method="post">
+              <input type="hidden" name="roomReservation" th:value="${iter.index}" />
+              <button type="submit" class="remove-button">Remove</button>
+            </form>
           </li>
         </ul>
       </div>
@@ -25,7 +46,7 @@
       <div th:if="${!reservation.getFlightReservations().isEmpty()}">
         <h4>Flight Bookings</h4>
         <ul style="list-style: none; padding: 0;">
-          <li th:each="flightRes : ${reservation.flightReservations}" style="border: 1px solid #ddd; margin-bottom: 10px; padding: 10px;">
+          <li th:each="flightRes, iter : ${reservation.flightReservations}" style="border: 1px solid #ddd; margin-bottom: 10px; padding: 10px;">
 
             <!-- LEFT section: Timeline and details -->
             <div style="flex: 1.2;">
@@ -58,6 +79,10 @@
               <div style="font-size: 14px; color: #777;" th:text="'Plane: ' + ${flightRes.flight.planeModel}"></div>
             </div>
             <strong>Seat:</strong> <span th:text="${flightRes.seatNumber}"></span><br/>
+            <form th:action="@{/remove-flight-reservation}" method="post">
+              <input type="hidden" name="flightReservation" th:value="${iter.index}" />
+              <button type="submit" class="remove-button">Remove</button>
+            </form>
           </li>
         </ul>
       </div>

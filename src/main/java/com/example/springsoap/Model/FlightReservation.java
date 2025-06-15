@@ -22,4 +22,13 @@ public class FlightReservation {
     public Long getSeatId() {
         return seatId;
     }
+
+    @Override
+    public String toString() {
+        return "FlightReservation{" +
+                "flight=" + flight +
+                ", seatNumber='" + seatNumber + '\'' +
+                ", seatId=" + seatId +
+                '}';
+    }
 }

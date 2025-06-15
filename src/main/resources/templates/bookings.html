@@ -148,6 +148,7 @@
                 <strong>Flight:</strong> <span th:text="${flight.flightNumber}"></span><br/>
 
                 <strong>Seat:</strong> <span th:text="${flight.seatNumber}"></span><br/>
+                <strong>Departure time:</strong> <span th:text="${flight.departureTime}"></span><br/>
                 <strong>Status:</strong>
                 <span th:text="${flight.status}"
                       th:classappend="'status-badge status-' + ${flight.status.toLowerCase()}">Status</span>
